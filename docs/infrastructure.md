@@ -39,6 +39,12 @@
 | 后端 API | `localhost:8080` |
 | 前端 Vite | `localhost:5173` |
 
+## 本地工程目录
+
+- 后端：`src/backend`
+- 前端：`src/frontend`
+- 共享类型：`src/shared`
+
 ## 本地脚本
 
 - `scripts/start-tunnels.ps1`：启动 SSH 隧道。
@@ -51,6 +57,8 @@
 - `scripts/frontend.ps1 status|start|stop|restart`：管理本地 React 前端生命周期。
 - `scripts/dev-backend.ps1`：`backend.ps1 start` 的兼容入口。
 - `scripts/dev-frontend.ps1`：`frontend.ps1 start` 的兼容入口。
+
+后端脚本会先编译固定二进制到 `.run/backend-api.exe` 再后台启动，避免 `go run` 生成临时 `api.exe` 和残留进程。后端监听 `127.0.0.1:8080`，不对局域网开放。
 
 ## 提交规范
 

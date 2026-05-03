@@ -10,11 +10,13 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$BackendDir = Join-Path $ProjectRoot "backend"
+$BackendDir = Join-Path $ProjectRoot "src\backend"
 $RunDir = Join-Path $ProjectRoot ".run"
 $PidFile = Join-Path $RunDir "backend.pid"
 $OutLog = Join-Path $RunDir "backend.out.log"
 $ErrLog = Join-Path $RunDir "backend.err.log"
+$EnvFile = Join-Path $ProjectRoot ".env.local"
+$BinaryPath = Join-Path $RunDir "backend-api.exe"
 
 function Get-ManagedProcess {
     if (-not (Test-Path $PidFile)) {
@@ -72,9 +74,29 @@ function Start-Backend {
         throw "PostgreSQL tunnel is not open. Run scripts/tunnels.ps1 start first."
     }
 
+    if (Test-Path $EnvFile) {
+        Get-Content $EnvFile | ForEach-Object {
+            if ($_ -match "^\s*#" -or $_ -notmatch "=") {
+                return
+            }
+
+            $parts = $_.Split("=", 2)
+            [Environment]::SetEnvironmentVariable($parts[0].Trim(), $parts[1].Trim(), "Process")
+        }
+    }
+
+    [Environment]::SetEnvironmentVariable("APP_PORT", "$Port", "Process")
+
+    Push-Location $BackendDir
+    try {
+        go build -o $BinaryPath ./cmd/api
+    } finally {
+        Pop-Location
+    }
+
     $process = Start-Process `
-        -FilePath "go" `
-        -ArgumentList @("run", "./cmd/api", "--port", "$Port") `
+        -FilePath $BinaryPath `
+        -ArgumentList @("--host", "127.0.0.1", "--port", "$Port") `
         -WorkingDirectory $BackendDir `
         -PassThru `
         -WindowStyle Hidden `

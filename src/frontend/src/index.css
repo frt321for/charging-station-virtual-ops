@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --surface-page: #f4f3ef;
+  --surface-panel: #fbfaf7;
+  --surface-control-hover: #efede7;
+  --border-subtle: #ddd9cf;
+  --border-strong: #b9b2a4;
+  --text-primary: #20201d;
+  --text-secondary: #5d5a52;
+  --text-muted: #827c70;
+  --status-ok: #247a52;
+  --danger-bg: #f9e8e4;
+  --danger-border: #dd9b8d;
+  --danger-text: #963928;
+  font-family:
+    "Aptos",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #247a52;
+  outline-offset: 3px;
+}

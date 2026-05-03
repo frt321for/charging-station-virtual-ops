@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$FrontendDir = Join-Path $ProjectRoot "frontend"
+$FrontendDir = Join-Path $ProjectRoot "src\frontend"
 $RunDir = Join-Path $ProjectRoot ".run"
 $PidFile = Join-Path $RunDir "frontend.pid"
 $OutLog = Join-Path $RunDir "frontend.out.log"
@@ -68,8 +68,8 @@ function Start-Frontend {
     New-Item -ItemType Directory -Force -Path $RunDir | Out-Null
 
     $process = Start-Process `
-        -FilePath "npm" `
-        -ArgumentList @("run", "dev", "--", "--host", "127.0.0.1", "--port", "$Port") `
+        -FilePath "pnpm.cmd" `
+        -ArgumentList @("dev", "--host", "127.0.0.1", "--port", "$Port") `
         -WorkingDirectory $FrontendDir `
         -PassThru `
         -WindowStyle Hidden `
