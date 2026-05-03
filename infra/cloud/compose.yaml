@@ -1,0 +1,57 @@
+services:
+  db:
+    image: timescale/timescaledb:2.26.3-pg16
+    container_name: charging_ops_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - charging_ops_pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: charging_ops_valkey
+    restart: unless-stopped
+    environment:
+      VALKEY_PASSWORD: ${VALKEY_PASSWORD}
+    command: ["sh", "-c", "valkey-server --appendonly yes --requirepass \"$${VALKEY_PASSWORD}\""]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - charging_ops_valkeydata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli -a \"$${VALKEY_PASSWORD}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  nats:
+    image: nats:2-alpine
+    container_name: charging_ops_nats
+    restart: unless-stopped
+    command: ["-js", "-m", "8222", "--store_dir", "/data/jetstream"]
+    ports:
+      - "127.0.0.1:4222:4222"
+      - "127.0.0.1:8222:8222"
+    volumes:
+      - charging_ops_natsdata:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  charging_ops_pgdata:
+  charging_ops_valkeydata:
+  charging_ops_natsdata:
