@@ -42,6 +42,30 @@ func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, r, detail)
 }
 
+// CreateReservation creates a reservation-backed session.
+func (h *Handler) CreateReservation(w http.ResponseWriter, r *http.Request) {
+	var request createReservationRequest
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		response.Error(w, r, http.StatusBadRequest, 10002, "请求格式错误", "invalid json body")
+		return
+	}
+
+	detail, err := h.service.CreateReservation(r.Context(), CreateReservationParams{
+		ConnectorCode:      request.ConnectorCode,
+		ReservationMinutes: request.ReservationMinutes,
+		RequestedBy:        request.RequestedBy,
+		Payload:            request.Payload,
+	})
+	if err != nil {
+		h.writeError(w, r, err)
+		return
+	}
+
+	response.OK(w, r, detail)
+}
+
 // Transition moves a charging session through the documented lifecycle.
 func (h *Handler) Transition(w http.ResponseWriter, r *http.Request) {
 	var request transitionRequest
@@ -78,10 +102,19 @@ type transitionRequest struct {
 	Payload      json.RawMessage `json:"payload"`
 }
 
+type createReservationRequest struct {
+	ConnectorCode      string          `json:"connectorCode"`
+	ReservationMinutes int             `json:"reservationMinutes"`
+	RequestedBy        string          `json:"requestedBy"`
+	Payload            json.RawMessage `json:"payload"`
+}
+
 func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, ErrNotFound):
 		response.Error(w, r, http.StatusNotFound, 30001, "会话不存在", "session not found")
+	case errors.Is(err, ErrInvalidReservation):
+		response.Error(w, r, http.StatusBadRequest, 30012, "预约请求不合法", "invalid reservation")
 	case errors.Is(err, ErrInvalidStatus):
 		response.Error(w, r, http.StatusBadRequest, 30010, "会话状态不存在", "invalid session status")
 	case errors.Is(err, ErrInvalidTransition):

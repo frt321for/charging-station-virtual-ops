@@ -8,6 +8,8 @@ import (
 
 	"charging-ops/backend/internal/common/config"
 	"charging-ops/backend/internal/common/health"
+	"charging-ops/backend/internal/domain/command"
+	"charging-ops/backend/internal/domain/gateway"
 	"charging-ops/backend/internal/domain/session"
 	"charging-ops/backend/internal/domain/site"
 	"charging-ops/backend/internal/platform/cache"
@@ -54,9 +56,11 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 	})
 	siteHandler := site.NewHandler(site.NewService(site.NewRepository(dbClient)))
 	sessionHandler := session.NewHandler(session.NewService(session.NewRepository(dbClient)))
+	commandHandler := command.NewHandler(command.NewService(command.NewRepository(dbClient)))
+	gatewayHandler := gateway.NewHandler(gateway.NewService(gateway.NewRepository(dbClient)))
 
 	mux := http.NewServeMux()
-	registerRoutes(mux, healthHandler, siteHandler, sessionHandler)
+	registerRoutes(mux, healthHandler, siteHandler, sessionHandler, commandHandler, gatewayHandler)
 
 	httpServer := &http.Server{
 		Addr:              cfg.HTTPHost + ":" + cfg.HTTPPort,

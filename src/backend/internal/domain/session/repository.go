@@ -11,6 +11,7 @@ import (
 	"charging-ops/backend/internal/platform/database"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // ErrNotFound is returned when a charging session cannot be found.
@@ -89,6 +90,34 @@ func (r *Repository) GetStatus(ctx context.Context, sessionID string) (Status, e
 	return status, nil
 }
 
+// CreateReservation creates a waiting-arrival session and reserves a connector.
+func (r *Repository) CreateReservation(ctx context.Context, params CreateReservationParams) (string, error) {
+	tx, err := r.database.Pool().Begin(ctx)
+	if err != nil {
+		return "", fmt.Errorf("begin reservation: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	target, err := scanReservationTarget(ctx, tx, params.ConnectorCode)
+	if err != nil {
+		return "", err
+	}
+	if target.connectorStatus != "available" {
+		return "", fmt.Errorf("%w: connector is not available", ErrInvalidReservation)
+	}
+
+	sessionNo := "CS-" + time.Now().UTC().Format("20060102150405.000000000")
+	if err := insertReservation(ctx, tx, target, sessionNo, params); err != nil {
+		return "", err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return "", fmt.Errorf("commit reservation: %w", err)
+	}
+	return sessionNo, nil
+}
+
 // AppendTransition updates a session state and appends a timeline event.
 func (r *Repository) AppendTransition(ctx context.Context, params TransitionParams) error {
 	tx, err := r.database.Pool().Begin(ctx)
@@ -131,6 +160,62 @@ func (r *Repository) AppendTransition(ctx context.Context, params TransitionPara
 
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit session transition: %w", err)
+	}
+	return nil
+}
+
+type reservationTarget struct {
+	siteID          string
+	chargerID       string
+	connectorID     string
+	connectorStatus string
+}
+
+func scanReservationTarget(ctx context.Context, tx txExecutor, connectorCode string) (reservationTarget, error) {
+	var target reservationTarget
+	err := tx.QueryRow(ctx, `
+		SELECT g.site_id::text, c.id::text, cn.id::text, cn.status
+		FROM connectors cn
+		INNER JOIN chargers c ON c.id = cn.charger_id
+		INNER JOIN charger_groups g ON g.id = c.group_id
+		WHERE cn.code = $1 AND cn.deleted_at IS NULL AND c.deleted_at IS NULL
+	`, connectorCode).Scan(&target.siteID, &target.chargerID, &target.connectorID, &target.connectorStatus)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return reservationTarget{}, ErrNotFound
+	}
+	if err != nil {
+		return reservationTarget{}, fmt.Errorf("query reservation target: %w", err)
+	}
+	return target, nil
+}
+
+type txExecutor interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func insertReservation(ctx context.Context, tx txExecutor, target reservationTarget, sessionNo string, params CreateReservationParams) error {
+	var sessionID string
+	err := tx.QueryRow(ctx, `
+		INSERT INTO charging_sessions (
+			session_no, site_id, charger_id, connector_id, status, reservation_expires_at
+		)
+		VALUES ($1, $2, $3, $4, 'waiting_arrival', now() + ($5 * interval '1 minute'))
+		RETURNING id::text
+	`, sessionNo, target.siteID, target.chargerID, target.connectorID, params.ReservationMinutes).Scan(&sessionID)
+	if err != nil {
+		return fmt.Errorf("insert reservation session: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx, "UPDATE connectors SET status = 'reserved' WHERE id::text = $1", target.connectorID); err != nil {
+		return fmt.Errorf("reserve connector: %w", err)
+	}
+	_, err = tx.Exec(ctx, `
+		INSERT INTO session_events (session_id, event_type, source, payload)
+		VALUES ($1, 'ReservationCreated', $2, $3)
+	`, sessionID, params.RequestedBy, params.Payload)
+	if err != nil {
+		return fmt.Errorf("insert reservation event: %w", err)
 	}
 	return nil
 }

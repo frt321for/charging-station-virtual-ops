@@ -6,6 +6,8 @@ import (
 
 	"charging-ops/backend/internal/common/health"
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/command"
+	"charging-ops/backend/internal/domain/gateway"
 	"charging-ops/backend/internal/domain/session"
 	"charging-ops/backend/internal/domain/site"
 )
@@ -15,14 +17,31 @@ func registerRoutes(
 	healthHandler *health.Handler,
 	siteHandler *site.Handler,
 	sessionHandler *session.Handler,
+	commandHandler *command.Handler,
+	gatewayHandler *gateway.Handler,
 ) {
 	mux.HandleFunc("GET /api/v1/health", healthHandler.Check)
 	mux.HandleFunc("GET /api/v1/meta", handleMeta)
 	mux.HandleFunc("GET /api/v1/sites", siteHandler.List)
 	mux.HandleFunc("GET /api/v1/sites/{siteId}/topology", siteHandler.Topology)
+	mux.HandleFunc("POST /api/v1/reservations", sessionHandler.CreateReservation)
 	mux.HandleFunc("GET /api/v1/sessions", sessionHandler.List)
 	mux.HandleFunc("GET /api/v1/sessions/{sessionId}", sessionHandler.Detail)
 	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/transition", sessionHandler.Transition)
+	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/commands/start", commandHandler.Create(command.TypeStart))
+	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/commands/stop", commandHandler.Create(command.TypeStop))
+	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/commands/pause", commandHandler.Create(command.TypePause))
+	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/commands/resume", commandHandler.Create(command.TypeResume))
+	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/commands/reset", commandHandler.Create(command.TypeReset))
+	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/commands/limit-power", commandHandler.Create(command.TypeLimitPower))
+	mux.HandleFunc("POST /api/v1/gateway/chargers/register", gatewayHandler.Register)
+	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/heartbeat", gatewayHandler.Heartbeat)
+	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/status", gatewayHandler.Status)
+	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/meter-values", gatewayHandler.MeterValue)
+	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/alarms", gatewayHandler.Alarm)
+	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/command-receipts", commandHandler.Receipt)
+	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/offline", gatewayHandler.Offline)
+	mux.HandleFunc("/", handleNotFound)
 }
 
 func handleMeta(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +60,10 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 			"operations-dashboard",
 		},
 	})
+}
+
+func handleNotFound(w http.ResponseWriter, r *http.Request) {
+	response.Error(w, r, http.StatusNotFound, 10004, "接口不存在", "route not found")
 }
 
 func traceMiddleware(logger *slog.Logger, next http.Handler) http.Handler {

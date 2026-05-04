@@ -84,6 +84,11 @@ func (f *fakeRepository) GetStatus(ctx context.Context, sessionID string) (Statu
 	return f.status, nil
 }
 
+func (f *fakeRepository) CreateReservation(ctx context.Context, params CreateReservationParams) (string, error) {
+	f.status = StatusWaitingArrival
+	return "CS-TEST", nil
+}
+
 func (f *fakeRepository) AppendTransition(ctx context.Context, params TransitionParams) error {
 	f.appended = true
 	f.status = params.TargetStatus

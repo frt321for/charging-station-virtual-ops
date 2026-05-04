@@ -76,3 +76,11 @@ type TransitionParams struct {
 	Source       string
 	Payload      json.RawMessage
 }
+
+// CreateReservationParams describes a reservation request.
+type CreateReservationParams struct {
+	ConnectorCode      string
+	ReservationMinutes int
+	RequestedBy        string
+	Payload            json.RawMessage
+}
