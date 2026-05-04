@@ -36,6 +36,11 @@ func (c *Client) Check(ctx context.Context) error {
 	return nil
 }
 
+// Pool returns the underlying pgx pool for repository and migration code.
+func (c *Client) Pool() *pgxpool.Pool {
+	return c.pool
+}
+
 // Close releases the database pool.
 func (c *Client) Close() {
 	if c != nil && c.pool != nil {

@@ -53,6 +53,7 @@
 - `scripts/cloud-infra.ps1 status|start|stop|restart|logs`：管理云端基础设施容器生命周期。
 - `scripts/check-ports.ps1`：检查本地开发端口和隧道端口。
 - `scripts/check-cloud-infra.ps1`：查看云端容器和服务健康状态。
+- `scripts/db.ps1 status|up|down`：通过 SSH 隧道对云端开发库执行后端内置迁移。
 - `scripts/backend.ps1 status|start|stop|restart`：管理本地 Go 后端生命周期。
 - `scripts/frontend.ps1 status|start|stop|restart`：管理本地 React 前端生命周期。
 - `scripts/dev-backend.ps1`：`backend.ps1 start` 的兼容入口。

@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS charger_meter_values;
+DROP TABLE IF EXISTS session_events;
+DROP TABLE IF EXISTS charging_sessions;
+DROP TABLE IF EXISTS connectors;
+DROP TABLE IF EXISTS chargers;
+DROP TABLE IF EXISTS charger_groups;
+DROP TABLE IF EXISTS areas;
+DROP TABLE IF EXISTS sites;
+DROP FUNCTION IF EXISTS set_updated_at();
