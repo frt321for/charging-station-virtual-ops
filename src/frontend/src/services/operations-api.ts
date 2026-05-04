@@ -1,15 +1,22 @@
 import type {
   BillingDraft,
+  BillingCorrection,
   CommandPathType,
   CreateCommandRequest,
+  CreateCorrectionRequest,
   CreateLoadControlRecordRequest,
+  CreateWorkOrderRequest,
+  ConfirmBillRequest,
   CreateReservationRequest,
   GenerateBillingDraftRequest,
   LoadControlRecord,
   LoadControlSnapshot,
+  MaintenanceSnapshot,
   OperationsSnapshot,
   PricingPolicy,
   ReconciliationException,
+  ReconciliationExport,
+  ReviewExceptionRequest,
   RemoteCommand,
   SessionDetail,
   SessionSummary,
@@ -17,6 +24,9 @@ import type {
   SimulatorStatus,
   SiteSummary,
   SiteTopology,
+  TransitionWorkOrderRequest,
+  WorkOrder,
+  WorkOrderEvent,
 } from '../types/operations'
 import { ApiError, apiRequest, jsonBody } from './api-client'
 
@@ -103,6 +113,56 @@ export async function listReconciliationExceptions(siteId: string): Promise<Reco
   return data.list
 }
 
+export async function reviewReconciliationException(
+  exceptionId: string,
+  request: ReviewExceptionRequest,
+): Promise<{ status: ReconciliationException['status'] }> {
+  return apiRequest<{ status: ReconciliationException['status'] }>(
+    `/api/v1/reconciliation-exceptions/${encodeURIComponent(exceptionId)}/review`,
+    {
+      method: 'POST',
+      body: jsonBody(request),
+    },
+  )
+}
+
+export async function createBillingCorrection(
+  exceptionId: string,
+  request: CreateCorrectionRequest,
+): Promise<BillingCorrection> {
+  return apiRequest<BillingCorrection>(
+    `/api/v1/reconciliation-exceptions/${encodeURIComponent(exceptionId)}/corrections`,
+    {
+      method: 'POST',
+      body: jsonBody(request),
+    },
+  )
+}
+
+export async function exportReconciliation(
+  siteId: string,
+  generatedBy: string,
+): Promise<ReconciliationExport> {
+  return apiRequest<ReconciliationExport>(
+    `/api/v1/reconciliation-exceptions/export?siteId=${encodeURIComponent(siteId)}&generatedBy=${encodeURIComponent(
+      generatedBy,
+    )}`,
+  )
+}
+
+export async function confirmBillingDraft(
+  billId: string,
+  request: ConfirmBillRequest,
+): Promise<{ status: BillingDraft['status'] }> {
+  return apiRequest<{ status: BillingDraft['status'] }>(
+    `/api/v1/billing-drafts/${encodeURIComponent(billId)}/confirm`,
+    {
+      method: 'POST',
+      body: jsonBody(request),
+    },
+  )
+}
+
 export async function getLoadControlSnapshot(siteId: string): Promise<LoadControlSnapshot> {
   return apiRequest<LoadControlSnapshot>(`/api/v1/sites/${encodeURIComponent(siteId)}/load-control`)
 }
@@ -114,6 +174,43 @@ export async function createLoadControlRecord(
     method: 'POST',
     body: jsonBody(request),
   })
+}
+
+export async function getMaintenanceSnapshot(siteId: string): Promise<MaintenanceSnapshot> {
+  return apiRequest<MaintenanceSnapshot>(`/api/v1/maintenance?siteId=${encodeURIComponent(siteId)}`)
+}
+
+export async function createWorkOrder(
+  faultId: string,
+  request: CreateWorkOrderRequest,
+): Promise<WorkOrder> {
+  return apiRequest<WorkOrder>(
+    `/api/v1/faults/${encodeURIComponent(faultId)}/work-order`,
+    {
+      method: 'POST',
+      body: jsonBody(request),
+    },
+  )
+}
+
+export async function listWorkOrderEvents(workOrderId: string): Promise<WorkOrderEvent[]> {
+  const data = await apiRequest<ListResponse<WorkOrderEvent>>(
+    `/api/v1/work-orders/${encodeURIComponent(workOrderId)}/events`,
+  )
+  return data.list
+}
+
+export async function transitionWorkOrder(
+  workOrderId: string,
+  request: TransitionWorkOrderRequest,
+): Promise<WorkOrder> {
+  return apiRequest<WorkOrder>(
+    `/api/v1/work-orders/${encodeURIComponent(workOrderId)}/transition`,
+    {
+      method: 'POST',
+      body: jsonBody(request),
+    },
+  )
 }
 
 export async function getSimulatorStatus(): Promise<SimulatorStatus> {
@@ -150,13 +247,22 @@ export async function getOperationsSnapshot(siteCode?: string): Promise<Operatio
   }
 
   const sessions = allSessions.filter((session) => session.siteId === site.id)
-  const [topology, pricingPolicies, billingDrafts, reconciliationExceptions, loadControl, detailResults] =
+  const [
+    topology,
+    pricingPolicies,
+    billingDrafts,
+    reconciliationExceptions,
+    loadControl,
+    maintenance,
+    detailResults,
+  ] =
     await Promise.all([
       getSiteTopology(site.code),
       listPricingPolicies(site.code),
       listBillingDrafts(site.code),
       listReconciliationExceptions(site.code),
       getLoadControlSnapshot(site.code),
+      getMaintenanceSnapshot(site.code),
       Promise.allSettled(sessions.slice(0, 12).map((session) => getSessionDetail(session.sessionNo))),
     ])
   const sessionDetails = detailResults.flatMap((result) =>
@@ -173,5 +279,6 @@ export async function getOperationsSnapshot(siteCode?: string): Promise<Operatio
     billingDrafts,
     reconciliationExceptions,
     loadControl,
+    maintenance,
   }
 }

@@ -227,6 +227,61 @@ export interface ReconciliationException {
   resolvedAt?: string
 }
 
+export interface BillingCorrection {
+  id: string
+  correctionNo: string
+  billId: string
+  billNo: string
+  exceptionId?: string
+  exceptionNo: string
+  correctedEnergyKwh?: number
+  correctedDurationMinutes?: number
+  correctedTotalAmount?: number
+  reason: string
+  reviewerName: string
+  status: 'draft' | 'applied' | 'voided'
+  createdAt: string
+}
+
+export interface ReconciliationExportRow {
+  exceptionNo: string
+  billNo: string
+  sessionNo: string
+  exceptionType: ReconciliationException['exceptionType']
+  severity: ReconciliationException['severity']
+  status: ReconciliationException['status']
+  reason: string
+  totalAmount: number
+}
+
+export interface ReconciliationExport {
+  exportNo: string
+  filename: string
+  generatedBy: string
+  generatedAt: string
+  rows: ReconciliationExportRow[]
+  csv: string
+}
+
+export interface ReviewExceptionRequest {
+  status: ReconciliationException['status']
+  reviewerName: string
+  note: string
+}
+
+export interface CreateCorrectionRequest {
+  correctedEnergyKwh?: number
+  correctedDurationMinutes?: number
+  correctedTotalAmount?: number
+  reason: string
+  reviewerName: string
+}
+
+export interface ConfirmBillRequest {
+  reviewerName: string
+  note: string
+}
+
 export interface LoadPolicy {
   id: string
   siteId: string
@@ -285,6 +340,120 @@ export interface LoadControlSnapshot {
   policies: LoadPolicy[]
   queue: QueueItem[]
   records: LoadControlRecord[]
+}
+
+export type FaultSeverity = 'low' | 'medium' | 'high' | 'critical'
+export type FaultStatus = 'open' | 'linked_work_order' | 'resolved'
+export type WorkOrderStatus =
+  | 'open'
+  | 'assigned'
+  | 'accepted'
+  | 'arrived'
+  | 'handling'
+  | 'retest'
+  | 'recovered'
+  | 'closed'
+  | 'cancelled'
+
+export interface Fault {
+  id: string
+  faultNo: string
+  siteId: string
+  siteCode: string
+  chargerId: string
+  chargerCode: string
+  connectorId?: string
+  connectorCode: string
+  sessionId?: string
+  sessionNo: string
+  faultCode: string
+  severity: FaultSeverity
+  status: FaultStatus
+  workOrderId?: string
+  workOrderNo: string
+  repeatCount: number
+  occurredAt: string
+  resolvedAt?: string
+}
+
+export interface WorkOrder {
+  id: string
+  workOrderNo: string
+  faultId?: string
+  faultNo: string
+  siteId: string
+  siteCode: string
+  chargerId: string
+  chargerCode: string
+  connectorId?: string
+  connectorCode: string
+  sessionId?: string
+  sessionNo: string
+  severity: FaultSeverity
+  status: WorkOrderStatus
+  impactScope: string
+  title: string
+  description: string
+  assigneeName: string
+  responseDueAt: string
+  recoveryDueAt: string
+  acceptedAt?: string
+  arrivedAt?: string
+  handlingAt?: string
+  retestAt?: string
+  recoveredAt?: string
+  closedAt?: string
+  slaResponseBreached: boolean
+  slaRecoveryBreached: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WorkOrderEvent {
+  id: string
+  workOrderId: string
+  eventType: string
+  fromStatus: string
+  toStatus: string
+  actorName: string
+  note: string
+  payload: Record<string, unknown>
+  occurredAt: string
+}
+
+export interface SLASummary {
+  siteId: string
+  siteCode: string
+  openWorkOrders: number
+  overdueResponse: number
+  overdueRecovery: number
+  criticalOpen: number
+  repeatedFaults: number
+  averageRecoveryMins: number
+  responseSlaHitRate: number
+  recoverySlaHitRate: number
+}
+
+export interface MaintenanceSnapshot {
+  faults: Fault[]
+  workOrders: WorkOrder[]
+  sla: SLASummary
+}
+
+export interface CreateWorkOrderRequest {
+  assigneeName: string
+  impactScope: string
+  title: string
+  description: string
+  actorName: string
+}
+
+export interface TransitionWorkOrderRequest {
+  targetStatus: WorkOrderStatus
+  assigneeName: string
+  actorName: string
+  note: string
+  payload?: Record<string, unknown>
 }
 
 export interface CreateReservationRequest {
@@ -356,4 +525,5 @@ export interface OperationsSnapshot {
   billingDrafts: BillingDraft[]
   reconciliationExceptions: ReconciliationException[]
   loadControl: LoadControlSnapshot
+  maintenance: MaintenanceSnapshot
 }

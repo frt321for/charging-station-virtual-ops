@@ -56,6 +56,19 @@
 | `GET` | `/api/v1/sites/{siteId}/load-control` | 查询站点负载策略、当前负载、队列和控制记录 |
 | `POST` | `/api/v1/load-control/records` | 写入人工负载控制记录 |
 
+## Phase 3 故障维保与财务复核接口
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| `GET` | `/api/v1/maintenance?siteId=HQ-CAMPUS` | 查询故障队列、工单列表和 SLA 汇总 |
+| `POST` | `/api/v1/faults/{faultId}/work-order` | 从故障创建或关联维保工单 |
+| `GET` | `/api/v1/work-orders/{workOrderId}/events` | 查询工单流转事件 |
+| `POST` | `/api/v1/work-orders/{workOrderId}/transition` | 推进工单状态并写审计记录 |
+| `POST` | `/api/v1/reconciliation-exceptions/{exceptionId}/review` | 更新核查异常状态 |
+| `POST` | `/api/v1/reconciliation-exceptions/{exceptionId}/corrections` | 写入账单修正记录，不改写原始读数 |
+| `POST` | `/api/v1/billing-drafts/{billId}/confirm` | 确认账单并关闭关联核查异常 |
+| `GET` | `/api/v1/reconciliation-exceptions/export?siteId=HQ-CAMPUS&generatedBy=finance-reviewer` | 导出核查异常 CSV 包并写审计 |
+
 ## 会话状态流转
 
 当前后端强制校验以下状态流转：
@@ -277,3 +290,80 @@ pending_review -> billed | cancelled
 ```
 
 `actionType` 支持 `limit_power`、`pause`、`resume`、`queue`、`reject`、`promote`、`release`。`status` 支持 `recommended`、`sent`、`applied`、`rejected`。`sessionId` 可为空；为空时记录站点级控制决策。
+
+## 工单创建请求
+
+```json
+{
+  "assigneeName": "maintenance-shift-a",
+  "impactScope": "connector",
+  "title": "直流桩 2 号枪不可用",
+  "description": "CONNECTOR_UNAVAILABLE",
+  "actorName": "maintenance"
+}
+```
+
+`faultId` 支持故障 UUID 或故障编号。已有工单时接口返回已关联工单。
+
+## 工单流转请求
+
+```json
+{
+  "targetStatus": "accepted",
+  "assigneeName": "maintenance-shift-a",
+  "actorName": "maintenance",
+  "note": "现场确认",
+  "payload": {
+    "source": "operations-console"
+  }
+}
+```
+
+工单状态流转约束：
+
+```text
+open -> assigned | cancelled
+assigned -> accepted | cancelled
+accepted -> arrived | cancelled
+arrived -> handling | cancelled
+handling -> retest | cancelled
+retest -> recovered | handling | cancelled
+recovered -> closed
+```
+
+## 核查复核请求
+
+```json
+{
+  "status": "reviewing",
+  "reviewerName": "finance-reviewer",
+  "note": "账单复核"
+}
+```
+
+`status` 支持 `open`、`reviewing`、`resolved`。
+
+## 账单修正请求
+
+```json
+{
+  "correctedEnergyKwh": 12.45,
+  "correctedDurationMinutes": 86,
+  "correctedTotalAmount": 22.8,
+  "reason": "人工复核修正",
+  "reviewerName": "finance-reviewer"
+}
+```
+
+修正记录只进入 `billing_corrections` 和审计日志，不更新原始电表读数。
+
+## 账单确认请求
+
+```json
+{
+  "reviewerName": "finance-reviewer",
+  "note": "账单确认"
+}
+```
+
+确认后账单状态为 `confirmed`，关联核查异常为 `resolved`，会话状态回到 `billed`。

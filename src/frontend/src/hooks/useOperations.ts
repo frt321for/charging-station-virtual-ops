@@ -1,21 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  confirmBillingDraft,
+  createBillingCorrection,
   createLoadControlRecord,
   createRemoteCommand,
   createReservation,
+  createWorkOrder,
+  exportReconciliation,
   generateBillingDraft,
   getOperationsSnapshot,
   getSessionDetail,
   getSimulatorStatus,
+  listWorkOrderEvents,
+  reviewReconciliationException,
   runSimulatorOnce,
   startSimulator,
   stopSimulator,
+  transitionWorkOrder,
 } from '../services/operations-api'
 import type {
   CommandPathType,
+  ConfirmBillRequest,
+  CreateCorrectionRequest,
   CreateLoadControlRecordRequest,
+  CreateWorkOrderRequest,
   CreateReservationRequest,
+  ReviewExceptionRequest,
   SimulatorRequest,
+  TransitionWorkOrderRequest,
 } from '../types/operations'
 
 export function useOperationsSnapshot(siteCode?: string) {
@@ -31,6 +43,15 @@ export function useSessionDetail(sessionId?: string) {
     queryKey: ['operations', 'session', sessionId],
     queryFn: () => getSessionDetail(sessionId ?? ''),
     enabled: Boolean(sessionId),
+    refetchInterval: 10_000,
+  })
+}
+
+export function useWorkOrderEvents(workOrderId?: string) {
+  return useQuery({
+    queryKey: ['operations', 'work-order-events', workOrderId],
+    queryFn: () => listWorkOrderEvents(workOrderId ?? ''),
+    enabled: Boolean(workOrderId),
     refetchInterval: 10_000,
   })
 }
@@ -87,6 +108,79 @@ export function useCreateLoadControlRecord() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['operations'] })
     },
+  })
+}
+
+export function useCreateWorkOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: { faultId: string; body: CreateWorkOrderRequest }) =>
+      createWorkOrder(request.faultId, request.body),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['operations'] }),
+        queryClient.invalidateQueries({ queryKey: ['operations', 'work-order-events'] }),
+      ])
+    },
+  })
+}
+
+export function useTransitionWorkOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: { workOrderId: string; body: TransitionWorkOrderRequest }) =>
+      transitionWorkOrder(request.workOrderId, request.body),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['operations'] }),
+        queryClient.invalidateQueries({ queryKey: ['operations', 'work-order-events'] }),
+      ])
+    },
+  })
+}
+
+export function useReviewReconciliationException() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: { exceptionId: string; body: ReviewExceptionRequest }) =>
+      reviewReconciliationException(request.exceptionId, request.body),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['operations'] })
+    },
+  })
+}
+
+export function useCreateBillingCorrection() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: { exceptionId: string; body: CreateCorrectionRequest }) =>
+      createBillingCorrection(request.exceptionId, request.body),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['operations'] })
+    },
+  })
+}
+
+export function useConfirmBillingDraft() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: { billId: string; body: ConfirmBillRequest }) =>
+      confirmBillingDraft(request.billId, request.body),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['operations'] })
+    },
+  })
+}
+
+export function useExportReconciliation() {
+  return useMutation({
+    mutationFn: (request: { siteId: string; generatedBy: string }) =>
+      exportReconciliation(request.siteId, request.generatedBy),
   })
 }
 

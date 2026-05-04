@@ -127,6 +127,7 @@
 .ops-sim-body,
 .ops-billing-body,
 .ops-load-control,
+.ops-maintenance,
 .ops-event-list,
 .ops-queue-list,
 .ops-reconciliation-list,
@@ -229,13 +230,19 @@
 
 .ops-billing-body,
 .ops-load-control,
+.ops-maintenance,
 .ops-reconciliation-list {
   display: grid;
   gap: 16px;
 }
 
 .ops-billing-form,
-.ops-load-form {
+.ops-load-form,
+.ops-maintenance-form,
+.ops-transition-form,
+.ops-finance-form,
+.ops-correction-grid,
+.ops-confirm-row {
   display: grid;
   gap: 12px;
 }
@@ -246,7 +253,12 @@
 }
 
 .ops-billing-form label,
-.ops-load-form label {
+.ops-load-form label,
+.ops-maintenance-form label,
+.ops-transition-form label,
+.ops-finance-form label,
+.ops-correction-grid label,
+.ops-confirm-row label {
   display: grid;
   gap: 8px;
   color: var(--ops-muted);
@@ -255,7 +267,15 @@
 
 .ops-billing-form select,
 .ops-load-form select,
-.ops-load-form input {
+.ops-load-form input,
+.ops-maintenance-form select,
+.ops-maintenance-form input,
+.ops-transition-form select,
+.ops-transition-form input,
+.ops-finance-form select,
+.ops-finance-form input,
+.ops-correction-grid input,
+.ops-confirm-row select {
   min-height: 44px;
   border: 1px solid var(--ops-line-strong);
   border-radius: 0;
@@ -265,7 +285,11 @@
 }
 
 .ops-billing-form button,
-.ops-wide-button {
+.ops-wide-button,
+.ops-transition-form button,
+.ops-finance-form button,
+.ops-correction-grid button,
+.ops-confirm-row button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -402,6 +426,116 @@
   font-family: "Cascadia Mono", "Consolas", monospace;
 }
 
+.ops-sla-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ops-sla-grid > div,
+.ops-fault-list article,
+.ops-workorder-list button {
+  border: 1px solid var(--ops-line);
+  background: #111713;
+}
+
+.ops-sla-grid > div {
+  display: grid;
+  gap: 8px;
+  min-height: 82px;
+  padding: 13px;
+}
+
+.ops-sla-grid span,
+.ops-fault-list span,
+.ops-fault-list footer,
+.ops-workorder-list code {
+  color: var(--ops-muted);
+}
+
+.ops-sla-grid data {
+  color: var(--ops-accent-strong);
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 26px;
+}
+
+.ops-maintenance-form {
+  grid-template-columns: minmax(220px, 1.1fr) repeat(2, minmax(130px, 0.6fr)) repeat(2, minmax(160px, 1fr));
+  align-items: end;
+}
+
+.ops-maintenance-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 14px;
+}
+
+.ops-fault-list,
+.ops-workorder-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.ops-fault-list article {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+}
+
+.ops-fault-list article > div,
+.ops-fault-list footer,
+.ops-workorder-list button,
+.ops-workorder-list button span {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ops-fault-list article > div {
+  justify-content: flex-start;
+}
+
+.ops-workorder-list button {
+  min-height: 54px;
+  color: var(--ops-ink);
+  padding: 0 12px;
+  text-align: left;
+}
+
+.ops-workorder-list button span {
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.ops-workorder-list strong,
+.ops-workorder-list code {
+  overflow-wrap: anywhere;
+}
+
+.ops-transition-form {
+  grid-template-columns: minmax(150px, 0.7fr) minmax(240px, 1fr) auto;
+  align-items: end;
+}
+
+.ops-finance-form {
+  grid-template-columns: minmax(240px, 1.2fr) minmax(150px, 0.7fr) minmax(150px, 0.7fr) minmax(180px, 1fr) auto;
+  align-items: end;
+}
+
+.ops-correction-grid {
+  grid-template-columns: repeat(3, minmax(120px, 0.65fr)) minmax(220px, 1fr) auto;
+  align-items: end;
+}
+
+.ops-confirm-row {
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  align-items: end;
+}
+
 .ops-queue-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -501,12 +635,19 @@
   .ops-ports,
   .ops-sim-body,
   .ops-sim-actions,
-  .ops-billing-form,
-  .ops-price-strip,
-  .ops-policy-grid,
-  .ops-load-form,
-  .ops-limit,
-  .ops-actions {
+    .ops-billing-form,
+    .ops-price-strip,
+    .ops-policy-grid,
+    .ops-load-form,
+    .ops-maintenance-form,
+    .ops-maintenance-grid,
+    .ops-transition-form,
+    .ops-finance-form,
+    .ops-correction-grid,
+    .ops-confirm-row,
+    .ops-sla-grid,
+    .ops-limit,
+    .ops-actions {
     grid-template-columns: 1fr;
   }
 

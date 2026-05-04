@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react'
 import { BillingDraftPanel } from '../../components/operations/BillingDraftPanel'
 import { CommandPanel } from '../../components/operations/CommandPanel'
 import { LoadControlPanel } from '../../components/operations/LoadControlPanel'
+import { MaintenancePanel } from '../../components/operations/MaintenancePanel'
 import { OverviewMetrics } from '../../components/operations/OverviewMetrics'
 import { ReconciliationPanel } from '../../components/operations/ReconciliationPanel'
 import { SessionTable } from '../../components/operations/SessionTable'
@@ -10,14 +11,28 @@ import { SimulatorPanel } from '../../components/operations/SimulatorPanel'
 import { StatusBadge } from '../../components/operations/StatusBadge'
 import { TopologyPanel } from '../../components/operations/TopologyPanel'
 import {
+  useConfirmBillingDraft,
+  useCreateBillingCorrection,
   useCreateLoadControlRecord,
   useGenerateBillingDraft,
+  useCreateWorkOrder,
+  useExportReconciliation,
   useOperationsSnapshot,
+  useReviewReconciliationException,
   useRemoteCommand,
   useSessionDetail,
+  useTransitionWorkOrder,
+  useWorkOrderEvents,
 } from '../../hooks/useOperations'
 import { ApiError } from '../../services/api-client'
-import type { CommandPathType } from '../../types/operations'
+import type {
+  CommandPathType,
+  ConfirmBillRequest,
+  CreateCorrectionRequest,
+  CreateWorkOrderRequest,
+  ReviewExceptionRequest,
+  TransitionWorkOrderRequest,
+} from '../../types/operations'
 import { canRunCommand } from '../../utils/operations'
 
 const navItems = [
@@ -28,6 +43,7 @@ const navItems = [
   { id: 'ops-simulator', label: '模拟' },
   { id: 'ops-load-control', label: '负载' },
   { id: 'ops-billing', label: '计费' },
+  { id: 'ops-maintenance', label: '维保' },
   { id: 'ops-reconciliation', label: '核查' },
 ]
 
@@ -36,6 +52,7 @@ export function OperationsPage() {
   const [searchText, setSearchText] = useState('')
   const [selectedSessionNo, setSelectedSessionNo] = useState<string | undefined>()
   const [selectedConnectorCode, setSelectedConnectorCode] = useState<string | undefined>()
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | undefined>()
   const [targetPowerKw, setTargetPowerKw] = useState('3.5')
   const [activeSectionId, setActiveSectionId] = useState(navItems[0].id)
 
@@ -49,6 +66,15 @@ export function OperationsPage() {
   const commandMutation = useRemoteCommand()
   const billingMutation = useGenerateBillingDraft()
   const loadControlMutation = useCreateLoadControlRecord()
+  const createWorkOrderMutation = useCreateWorkOrder()
+  const transitionWorkOrderMutation = useTransitionWorkOrder()
+  const workOrderEventsQuery = useWorkOrderEvents(
+    selectedWorkOrderId ?? snapshot?.maintenance.workOrders[0]?.id,
+  )
+  const reviewExceptionMutation = useReviewReconciliationException()
+  const correctionMutation = useCreateBillingCorrection()
+  const confirmBillMutation = useConfirmBillingDraft()
+  const exportReconciliationMutation = useExportReconciliation()
   const targetPowerKwNumber = Number(targetPowerKw)
   const isTargetPowerValid =
     targetPowerKw.trim() !== '' && Number.isFinite(targetPowerKwNumber) && targetPowerKwNumber > 0
@@ -82,6 +108,21 @@ export function OperationsPage() {
           loadControlMutation.error.details ?? loadControlMutation.error.code
         }`
       : loadControlMutation.error?.message
+  const maintenanceErrorMessage =
+    firstApiError(createWorkOrderMutation.error, transitionWorkOrderMutation.error) ??
+    createWorkOrderMutation.error?.message ??
+    transitionWorkOrderMutation.error?.message
+  const financeErrorMessage =
+    firstApiError(
+      reviewExceptionMutation.error,
+      correctionMutation.error,
+      confirmBillMutation.error,
+      exportReconciliationMutation.error,
+    ) ??
+    reviewExceptionMutation.error?.message ??
+    correctionMutation.error?.message ??
+    confirmBillMutation.error?.message ??
+    exportReconciliationMutation.error?.message
   const lastMessage = commandMutation.data
     ? `${commandMutation.data.commandNo} / ${commandMutation.data.status}`
     : undefined
@@ -111,6 +152,31 @@ export function OperationsPage() {
 
   function generateDraft(sessionNo: string) {
     billingMutation.mutate({ sessionId: sessionNo, generatedBy: 'finance-reviewer' })
+  }
+
+  function createWorkOrder(faultId: string, request: CreateWorkOrderRequest) {
+    createWorkOrderMutation.mutate({ faultId, body: request })
+  }
+
+  function transitionWorkOrder(workOrderId: string, request: TransitionWorkOrderRequest) {
+    setSelectedWorkOrderId(workOrderId)
+    transitionWorkOrderMutation.mutate({ workOrderId, body: request })
+  }
+
+  function reviewException(exceptionId: string, request: ReviewExceptionRequest) {
+    reviewExceptionMutation.mutate({ exceptionId, body: request })
+  }
+
+  function createCorrection(exceptionId: string, request: CreateCorrectionRequest) {
+    correctionMutation.mutate({ exceptionId, body: request })
+  }
+
+  function confirmBill(billId: string, request: ConfirmBillRequest) {
+    confirmBillMutation.mutate({ billId, body: request })
+  }
+
+  function exportReconciliation(siteCode: string) {
+    exportReconciliationMutation.mutate({ siteId: siteCode, generatedBy: 'finance-reviewer' })
   }
 
   function activateSection(sectionId: string) {
@@ -223,8 +289,38 @@ export function OperationsPage() {
                 onGenerate={generateDraft}
               />
             </div>
+            <div id="ops-maintenance">
+              <MaintenancePanel
+                snapshot={snapshot?.maintenance}
+                events={workOrderEventsQuery.data ?? []}
+                selectedWorkOrderId={selectedWorkOrderId}
+                isEventsFetching={workOrderEventsQuery.isFetching}
+                isCreatePending={createWorkOrderMutation.isPending}
+                isTransitionPending={transitionWorkOrderMutation.isPending}
+                lastWorkOrder={transitionWorkOrderMutation.data ?? createWorkOrderMutation.data}
+                errorMessage={maintenanceErrorMessage}
+                onSelectWorkOrder={setSelectedWorkOrderId}
+                onCreateWorkOrder={createWorkOrder}
+                onTransitionWorkOrder={transitionWorkOrder}
+              />
+            </div>
             <div id="ops-reconciliation">
-              <ReconciliationPanel exceptions={snapshot?.reconciliationExceptions ?? []} />
+              <ReconciliationPanel
+                exceptions={snapshot?.reconciliationExceptions ?? []}
+                drafts={snapshot?.billingDrafts ?? []}
+                siteCode={snapshot?.site.code}
+                isReviewPending={reviewExceptionMutation.isPending}
+                isCorrectionPending={correctionMutation.isPending}
+                isConfirmPending={confirmBillMutation.isPending}
+                isExportPending={exportReconciliationMutation.isPending}
+                lastCorrection={correctionMutation.data}
+                lastExport={exportReconciliationMutation.data}
+                errorMessage={financeErrorMessage}
+                onReview={reviewException}
+                onCreateCorrection={createCorrection}
+                onConfirmBill={confirmBill}
+                onExport={exportReconciliation}
+              />
             </div>
           </div>
           <aside className="ops-right">
@@ -250,4 +346,10 @@ export function OperationsPage() {
       )}
     </main>
   )
+}
+
+function firstApiError(...errors: unknown[]): string | undefined {
+  const apiError = errors.find((error): error is ApiError => error instanceof ApiError)
+  if (!apiError) return undefined
+  return `${apiError.message} / ${apiError.details ?? apiError.code}`
 }

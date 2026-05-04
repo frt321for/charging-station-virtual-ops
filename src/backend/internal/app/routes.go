@@ -8,8 +8,10 @@ import (
 	"charging-ops/backend/internal/common/response"
 	"charging-ops/backend/internal/domain/billing"
 	"charging-ops/backend/internal/domain/command"
+	"charging-ops/backend/internal/domain/finance"
 	"charging-ops/backend/internal/domain/gateway"
 	"charging-ops/backend/internal/domain/loadcontrol"
+	"charging-ops/backend/internal/domain/maintenance"
 	"charging-ops/backend/internal/domain/session"
 	"charging-ops/backend/internal/domain/simcontrol"
 	"charging-ops/backend/internal/domain/site"
@@ -24,6 +26,8 @@ func registerRoutes(
 	gatewayHandler *gateway.Handler,
 	billingHandler *billing.Handler,
 	loadControlHandler *loadcontrol.Handler,
+	maintenanceHandler *maintenance.Handler,
+	financeHandler *finance.Handler,
 	simulatorHandler *simcontrol.Handler,
 ) {
 	mux.HandleFunc("GET /api/v1/health", healthHandler.Check)
@@ -51,8 +55,16 @@ func registerRoutes(
 	mux.HandleFunc("GET /api/v1/billing-drafts", billingHandler.ListDrafts)
 	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/billing-draft", billingHandler.GenerateDraft)
 	mux.HandleFunc("GET /api/v1/reconciliation-exceptions", billingHandler.ListExceptions)
+	mux.HandleFunc("POST /api/v1/reconciliation-exceptions/{exceptionId}/review", financeHandler.ReviewException)
+	mux.HandleFunc("POST /api/v1/reconciliation-exceptions/{exceptionId}/corrections", financeHandler.CreateCorrection)
+	mux.HandleFunc("GET /api/v1/reconciliation-exceptions/export", financeHandler.ExportReconciliation)
+	mux.HandleFunc("POST /api/v1/billing-drafts/{billId}/confirm", financeHandler.ConfirmBill)
 	mux.HandleFunc("GET /api/v1/sites/{siteId}/load-control", loadControlHandler.Snapshot)
 	mux.HandleFunc("POST /api/v1/load-control/records", loadControlHandler.CreateRecord)
+	mux.HandleFunc("GET /api/v1/maintenance", maintenanceHandler.Snapshot)
+	mux.HandleFunc("POST /api/v1/faults/{faultId}/work-order", maintenanceHandler.CreateWorkOrder)
+	mux.HandleFunc("GET /api/v1/work-orders/{workOrderId}/events", maintenanceHandler.WorkOrderEvents)
+	mux.HandleFunc("POST /api/v1/work-orders/{workOrderId}/transition", maintenanceHandler.TransitionWorkOrder)
 	mux.HandleFunc("GET /api/v1/simulator/status", simulatorHandler.Status)
 	mux.HandleFunc("POST /api/v1/simulator/once", simulatorHandler.RunOnce)
 	mux.HandleFunc("POST /api/v1/simulator/start", simulatorHandler.Start)

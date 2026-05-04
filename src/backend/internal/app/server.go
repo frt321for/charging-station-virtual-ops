@@ -11,8 +11,10 @@ import (
 	"charging-ops/backend/internal/common/health"
 	"charging-ops/backend/internal/domain/billing"
 	"charging-ops/backend/internal/domain/command"
+	"charging-ops/backend/internal/domain/finance"
 	"charging-ops/backend/internal/domain/gateway"
 	"charging-ops/backend/internal/domain/loadcontrol"
+	"charging-ops/backend/internal/domain/maintenance"
 	"charging-ops/backend/internal/domain/session"
 	"charging-ops/backend/internal/domain/simcontrol"
 	"charging-ops/backend/internal/domain/site"
@@ -65,6 +67,8 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 	gatewayHandler := gateway.NewHandler(gateway.NewService(gateway.NewRepository(dbClient)))
 	billingHandler := billing.NewHandler(billing.NewService(billing.NewRepository(dbClient)))
 	loadControlHandler := loadcontrol.NewHandler(loadcontrol.NewService(loadcontrol.NewRepository(dbClient)))
+	maintenanceHandler := maintenance.NewHandler(maintenance.NewService(maintenance.NewRepository(dbClient)))
+	financeHandler := finance.NewHandler(finance.NewService(finance.NewRepository(dbClient)))
 	simulatorService := simcontrol.NewService(localAPIBase(cfg.HTTPHost, cfg.HTTPPort), logger)
 	simulatorHandler := simcontrol.NewHandler(simulatorService)
 
@@ -78,6 +82,8 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 		gatewayHandler,
 		billingHandler,
 		loadControlHandler,
+		maintenanceHandler,
+		financeHandler,
 		simulatorHandler,
 	)
 

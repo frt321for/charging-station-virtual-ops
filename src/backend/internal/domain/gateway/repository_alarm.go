@@ -66,3 +66,17 @@ func markFaultStatus(ctx context.Context, tx txExecutor, target alarmTarget) err
 	}
 	return nil
 }
+
+func insertOfflineFault(ctx context.Context, tx txExecutor, chargerID string) error {
+	faultNo := "FT-" + time.Now().UTC().Format("20060102150405.000000000")
+	_, err := tx.Exec(ctx, `
+		INSERT INTO charger_faults (
+			fault_no, charger_id, fault_code, severity, status, occurred_at, payload
+		)
+		VALUES ($1, $2, 'OFFLINE', 'high', 'open', now(), '{"source":"offline-report"}'::jsonb)
+	`, faultNo, chargerID)
+	if err != nil {
+		return fmt.Errorf("insert offline fault: %w", err)
+	}
+	return nil
+}

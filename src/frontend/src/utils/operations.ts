@@ -2,11 +2,15 @@ import type {
   ChargerNode,
   CommandPathType,
   ConnectorNode,
+  FaultSeverity,
+  FaultStatus,
   OperationsSnapshot,
   LoadActionType,
   LoadRecordStatus,
+  ReconciliationException,
   SessionDetail,
   SessionStatus,
+  WorkOrderStatus,
 } from '../types/operations'
 
 export const sessionStatusLabels: Record<SessionStatus, string> = {
@@ -52,6 +56,30 @@ export const exceptionSeverityLabels = {
   high: '高',
   critical: '严重',
 } as const
+
+export const reconciliationStatusLabels: Record<ReconciliationException['status'], string> = {
+  open: '待处理',
+  reviewing: '复核中',
+  resolved: '已解决',
+}
+
+export const faultStatusLabels: Record<FaultStatus, string> = {
+  open: '待派单',
+  linked_work_order: '已派单',
+  resolved: '已恢复',
+}
+
+export const workOrderStatusLabels: Record<WorkOrderStatus, string> = {
+  open: '待分派',
+  assigned: '已分派',
+  accepted: '已接单',
+  arrived: '已到场',
+  handling: '处理中',
+  retest: '复测中',
+  recovered: '已恢复',
+  closed: '已关闭',
+  cancelled: '已取消',
+}
 
 export function formatNumber(value: number, digits = 1): string {
   return new Intl.NumberFormat('zh-CN', {
@@ -126,6 +154,20 @@ export function sessionStatusTone(status: SessionStatus): 'ok' | 'charge' | 'war
   if (status === 'pending_billing' || status === 'reserved' || status === 'waiting_arrival') return 'warn'
   if (status === 'pending_review' || status === 'cancelled') return 'danger'
   if (status === 'billed') return 'ok'
+  return 'idle'
+}
+
+export function severityTone(severity: FaultSeverity): 'ok' | 'charge' | 'warn' | 'danger' | 'idle' {
+  if (severity === 'critical' || severity === 'high') return 'danger'
+  if (severity === 'medium') return 'warn'
+  return 'idle'
+}
+
+export function workOrderStatusTone(status: WorkOrderStatus): 'ok' | 'charge' | 'warn' | 'danger' | 'idle' {
+  if (status === 'closed' || status === 'recovered') return 'ok'
+  if (status === 'cancelled') return 'danger'
+  if (status === 'handling' || status === 'retest') return 'charge'
+  if (status === 'open' || status === 'assigned') return 'warn'
   return 'idle'
 }
 

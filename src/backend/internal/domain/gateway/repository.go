@@ -186,6 +186,9 @@ func (r *Repository) Offline(ctx context.Context, chargerCode string) (ChargerSn
 	if _, err := tx.Exec(ctx, "UPDATE connectors SET status = 'offline' WHERE charger_id::text = $1", chargerID); err != nil {
 		return ChargerSnapshot{}, fmt.Errorf("mark connectors offline: %w", err)
 	}
+	if err := insertOfflineFault(ctx, tx, chargerID); err != nil {
+		return ChargerSnapshot{}, err
+	}
 	if err := insertChargerEvent(ctx, tx, chargerID, nil, nil, "OfflineReported", "protocol-gateway", json.RawMessage(`{}`)); err != nil {
 		return ChargerSnapshot{}, err
 	}
