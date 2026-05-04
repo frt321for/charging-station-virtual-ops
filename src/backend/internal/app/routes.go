@@ -9,6 +9,7 @@ import (
 	"charging-ops/backend/internal/domain/command"
 	"charging-ops/backend/internal/domain/gateway"
 	"charging-ops/backend/internal/domain/session"
+	"charging-ops/backend/internal/domain/simcontrol"
 	"charging-ops/backend/internal/domain/site"
 )
 
@@ -19,6 +20,7 @@ func registerRoutes(
 	sessionHandler *session.Handler,
 	commandHandler *command.Handler,
 	gatewayHandler *gateway.Handler,
+	simulatorHandler *simcontrol.Handler,
 ) {
 	mux.HandleFunc("GET /api/v1/health", healthHandler.Check)
 	mux.HandleFunc("GET /api/v1/meta", handleMeta)
@@ -41,6 +43,10 @@ func registerRoutes(
 	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/alarms", gatewayHandler.Alarm)
 	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/command-receipts", commandHandler.Receipt)
 	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/offline", gatewayHandler.Offline)
+	mux.HandleFunc("GET /api/v1/simulator/status", simulatorHandler.Status)
+	mux.HandleFunc("POST /api/v1/simulator/once", simulatorHandler.RunOnce)
+	mux.HandleFunc("POST /api/v1/simulator/start", simulatorHandler.Start)
+	mux.HandleFunc("POST /api/v1/simulator/stop", simulatorHandler.Stop)
 	mux.HandleFunc("/", handleNotFound)
 }
 

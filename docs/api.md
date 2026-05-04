@@ -38,6 +38,10 @@
 | `POST` | `/api/v1/gateway/chargers/{chargerCode}/alarms` | 虚拟桩故障告警上报 |
 | `POST` | `/api/v1/gateway/chargers/{chargerCode}/command-receipts` | 虚拟桩命令回执 |
 | `POST` | `/api/v1/gateway/chargers/{chargerCode}/offline` | 虚拟桩离线 |
+| `GET` | `/api/v1/simulator/status` | 查询浏览器控制的虚拟桩模拟器状态 |
+| `POST` | `/api/v1/simulator/once` | 运行一次虚拟桩闭环场景 |
+| `POST` | `/api/v1/simulator/start` | 启动持续心跳/告警模拟 |
+| `POST` | `/api/v1/simulator/stop` | 停止持续模拟 |
 
 `siteId` 支持站点 UUID 或站点编码。`sessionId` 支持会话 UUID 或会话编号。
 
@@ -218,3 +222,19 @@ pending_review -> billed | cancelled
 ```
 
 命令回执中的 `commandType` 必须与原命令记录一致，否则返回 `404`，业务错误码 `30001`。
+
+## 模拟器控制请求
+
+`/api/v1/simulator/once` 和 `/api/v1/simulator/start` 请求体：
+
+```json
+{
+  "chargerCount": 5,
+  "connectorCount": 1,
+  "onlineRate": 0.8,
+  "faultRate": 0.05,
+  "loadCurve": "commute"
+}
+```
+
+`loadCurve` 支持 `commute`、`flat`、`random`。`onlineRate` 和 `faultRate` 范围为 `0` 到 `1`。

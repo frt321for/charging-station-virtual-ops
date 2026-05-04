@@ -1,0 +1,324 @@
+.ops-panel > header {
+  min-height: 58px;
+  align-items: center;
+  border-bottom: 1px solid var(--ops-line);
+  padding: 0 18px;
+}
+
+.ops-panel h2,
+.ops-circuit h3 {
+  margin: 0;
+}
+
+.ops-panel h2 {
+  font-size: 17px;
+  font-weight: 740;
+}
+
+.ops-topology {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.7fr);
+  gap: 16px;
+  padding: 18px;
+}
+
+.ops-circuit {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: var(--ops-panel-2);
+}
+
+.ops-circuit-head {
+  align-items: center;
+}
+
+.ops-ports {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ops-port {
+  display: grid;
+  gap: 14px;
+  min-height: 112px;
+  padding: 15px;
+  text-align: left;
+}
+
+.ops-port--selected {
+  border-color: var(--ops-accent);
+  background: #22251b;
+}
+
+.ops-port data {
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 30px;
+}
+
+.ops-zone-row {
+  display: grid;
+  gap: 8px;
+  border-color: transparent transparent transparent var(--ops-line-strong);
+  border-left-width: 3px;
+  padding: 10px 0 10px 12px;
+  text-align: left;
+}
+
+.ops-zone-row span,
+.ops-empty {
+  color: var(--ops-muted);
+}
+
+.ops-table-wrap {
+  overflow-x: auto;
+}
+
+.ops-panel table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.ops-panel th,
+.ops-panel td {
+  border-bottom: 1px solid var(--ops-line);
+  padding: 15px 18px;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.ops-panel th {
+  background: #1a211c;
+  color: var(--ops-muted);
+  font-weight: 680;
+}
+
+.ops-panel td.ops-num,
+.ops-panel th.ops-num {
+  text-align: right;
+}
+
+.ops-panel tbody tr:hover,
+.ops-row-selected {
+  background: rgba(215, 181, 95, 0.07);
+}
+
+.ops-row-actions,
+.ops-actions,
+.ops-sim-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.ops-row-actions {
+  grid-template-columns: repeat(2, max-content);
+}
+
+.ops-row-actions button {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.ops-control-body,
+.ops-sim-body,
+.ops-event-list,
+.ops-queue-list,
+.ops-sla {
+  padding: 18px;
+}
+
+.ops-target {
+  border: 1px solid var(--ops-line);
+  background: #111713;
+  padding: 16px;
+}
+
+.ops-target strong {
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 24px;
+}
+
+.ops-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ops-actions button,
+.ops-tools button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ops-limit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.ops-limit label,
+.ops-sim-body label {
+  display: grid;
+  gap: 8px;
+  color: var(--ops-muted);
+  font-size: 13px;
+}
+
+.ops-inline-result,
+.ops-inline-error {
+  border: 1px solid var(--ops-line);
+  padding: 12px;
+  color: var(--ops-muted);
+}
+
+.ops-inline-error {
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
+.ops-panel > .ops-inline-result,
+.ops-panel > .ops-inline-error {
+  display: block;
+  margin: 0 18px 18px;
+}
+
+.ops-event {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 12px;
+  border-left: 3px solid var(--ops-line-strong);
+  padding-left: 12px;
+}
+
+.ops-event strong {
+  display: block;
+}
+
+.ops-event time,
+.ops-event code {
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.ops-sim-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ops-sim-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--ops-line);
+  padding: 18px;
+}
+
+.ops-queue-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--ops-line);
+  background: #111713;
+  padding: 12px;
+}
+
+.ops-rank {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--ops-line-strong);
+  color: var(--ops-accent);
+  font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.ops-queue-item span,
+.ops-sla span {
+  color: var(--ops-muted);
+}
+
+.ops-page-error {
+  margin: 18px auto;
+  width: min(100% - 36px, 760px);
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg);
+  padding: 18px;
+  color: var(--danger-text);
+}
+
+.ops-spin {
+  animation: ops-spin 900ms linear infinite;
+}
+
+.ops-skeleton {
+  min-height: 130px;
+  background: linear-gradient(90deg, #151b17, #202820, #151b17);
+  background-size: 200% 100%;
+  animation: ops-shimmer 1.1s ease-in-out infinite;
+}
+
+@keyframes ops-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ops-shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .ops-topline,
+  .ops-main,
+  .ops-hero,
+  .ops-topology {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-tools {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .ops-tools > * {
+    flex: 1 1 160px;
+  }
+}
+
+@media (max-width: 760px) {
+  .ops-topline {
+    padding: 14px 12px;
+  }
+
+  .ops-main {
+    padding: 12px;
+  }
+
+  .ops-metric-grid,
+  .ops-ports,
+  .ops-sim-body,
+  .ops-sim-actions,
+  .ops-limit,
+  .ops-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-load-card {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  .ops-load-value strong {
+    font-size: 60px;
+  }
+
+  .ops-brand strong {
+    white-space: normal;
+  }
+}

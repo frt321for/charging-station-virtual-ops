@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"net"
 	"net/http"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"charging-ops/backend/internal/domain/command"
 	"charging-ops/backend/internal/domain/gateway"
 	"charging-ops/backend/internal/domain/session"
+	"charging-ops/backend/internal/domain/simcontrol"
 	"charging-ops/backend/internal/domain/site"
 	"charging-ops/backend/internal/platform/cache"
 	"charging-ops/backend/internal/platform/database"
@@ -23,6 +25,7 @@ type Server struct {
 	database   *database.Client
 	cache      *cache.Client
 	events     *events.Client
+	simulator  *simcontrol.Service
 }
 
 // NewServer creates an API server with all required infrastructure clients.
@@ -58,9 +61,11 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 	sessionHandler := session.NewHandler(session.NewService(session.NewRepository(dbClient)))
 	commandHandler := command.NewHandler(command.NewService(command.NewRepository(dbClient)))
 	gatewayHandler := gateway.NewHandler(gateway.NewService(gateway.NewRepository(dbClient)))
+	simulatorService := simcontrol.NewService(localAPIBase(cfg.HTTPHost, cfg.HTTPPort), logger)
+	simulatorHandler := simcontrol.NewHandler(simulatorService)
 
 	mux := http.NewServeMux()
-	registerRoutes(mux, healthHandler, siteHandler, sessionHandler, commandHandler, gatewayHandler)
+	registerRoutes(mux, healthHandler, siteHandler, sessionHandler, commandHandler, gatewayHandler, simulatorHandler)
 
 	httpServer := &http.Server{
 		Addr:              cfg.HTTPHost + ":" + cfg.HTTPPort,
@@ -73,6 +78,7 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 		database:   dbClient,
 		cache:      cacheClient,
 		events:     eventClient,
+		simulator:  simulatorService,
 	}, nil
 }
 
@@ -88,7 +94,15 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 // Close releases infrastructure clients.
 func (s *Server) Close() {
+	s.simulator.Stop()
 	s.events.Close()
 	s.cache.Close()
 	s.database.Close()
+}
+
+func localAPIBase(host string, port string) string {
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	return "http://" + net.JoinHostPort(host, port)
 }

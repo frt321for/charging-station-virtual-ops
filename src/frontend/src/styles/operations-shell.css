@@ -1,0 +1,292 @@
+.ops-shell {
+  min-height: 100dvh;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.024) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    var(--ops-page);
+  background-size: 56px 56px;
+  color: var(--ops-ink);
+}
+
+.ops-topline {
+  display: grid;
+  grid-template-columns: minmax(180px, auto) minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  border-bottom: 1px solid var(--ops-line);
+  background: rgba(14, 18, 16, 0.96);
+  padding: 16px 22px;
+}
+
+.ops-brand {
+  display: grid;
+  gap: 4px;
+}
+
+.ops-brand strong {
+  font-size: 22px;
+  line-height: 1.08;
+  white-space: nowrap;
+}
+
+.ops-brand span,
+.ops-mono,
+.ops-num,
+.ops-event time,
+.ops-event code {
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.ops-brand span {
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.ops-nav,
+.ops-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.ops-nav {
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.ops-nav button,
+.ops-tools button,
+.ops-actions button,
+.ops-row-actions button,
+.ops-sim-actions button,
+.ops-limit button,
+.ops-zone-row,
+.ops-port {
+  min-height: 44px;
+  border: 1px solid var(--ops-line-strong);
+  border-radius: 0;
+  background: #111713;
+  color: var(--ops-ink);
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.ops-nav button {
+  flex: 0 0 auto;
+  min-width: 82px;
+  border-color: var(--ops-line);
+  background: var(--ops-panel);
+  color: var(--ops-muted);
+}
+
+.ops-nav button[aria-current="page"] {
+  border-color: var(--ops-accent);
+  background: #24261d;
+  color: var(--ops-ink);
+}
+
+.ops-nav code {
+  color: var(--ops-faint);
+  font-size: 11px;
+}
+
+.ops-tools {
+  justify-content: flex-end;
+}
+
+.ops-tools select,
+.ops-tools input,
+.ops-limit input,
+.ops-sim-body input,
+.ops-sim-body select {
+  min-height: 44px;
+  border: 1px solid var(--ops-line-strong);
+  border-radius: 0;
+  background: #111713;
+  color: var(--ops-ink);
+  padding: 0 12px;
+}
+
+.ops-tools input {
+  width: 180px;
+}
+
+.ops-primary-button,
+.ops-actions button:first-child,
+.ops-sim-actions button:first-child {
+  border-color: var(--ops-accent);
+  background: var(--ops-accent);
+  color: #16150d;
+  font-weight: 720;
+}
+
+.ops-danger-button,
+.ops-danger-text {
+  border-color: color-mix(in srgb, var(--ops-danger) 72%, var(--ops-line));
+  color: #ffddd8;
+}
+
+.ops-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 390px);
+  gap: 18px;
+  width: min(100%, 1580px);
+  margin: 0 auto;
+  padding: 18px;
+}
+
+.ops-left,
+.ops-right,
+.ops-control-body,
+.ops-event-list,
+.ops-queue-list {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  min-width: 0;
+}
+
+.ops-hero {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.2fr) minmax(280px, 0.8fr);
+  gap: 18px;
+}
+
+.ops-load-card,
+.ops-panel,
+.ops-metric,
+.ops-port,
+.ops-circuit {
+  border: 1px solid var(--ops-line);
+  background: var(--ops-panel);
+}
+
+.ops-load-card {
+  display: grid;
+  gap: 24px;
+  min-height: 274px;
+  padding: 26px;
+  background:
+    linear-gradient(135deg, rgba(215, 181, 95, 0.14), transparent 58%),
+    var(--ops-panel);
+}
+
+.ops-load-card h1 {
+  margin: 0;
+  font-size: clamp(30px, 3vw, 46px);
+  line-height: 1.06;
+  font-weight: 780;
+}
+
+.ops-load-value {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.ops-load-value strong {
+  color: var(--ops-accent-strong);
+  font-size: clamp(60px, 6vw, 96px);
+  line-height: 0.88;
+}
+
+.ops-load-value span {
+  padding-bottom: 10px;
+  color: var(--ops-muted);
+  font-size: 18px;
+}
+
+.ops-capacity,
+.ops-metric,
+.ops-target,
+.ops-sla,
+.ops-zone-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.ops-bar-label,
+.ops-metric label,
+.ops-panel > header,
+.ops-circuit-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ops-bar-label,
+.ops-metric label,
+.ops-circuit-head span,
+.ops-target span,
+.ops-sla span {
+  color: var(--ops-muted);
+}
+
+.ops-bar {
+  height: 22px;
+  border: 1px solid var(--ops-line-strong);
+  background: #0f1411;
+}
+
+.ops-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #78a47d, var(--ops-accent));
+}
+
+.ops-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ops-metric {
+  min-height: 130px;
+  padding: 18px;
+}
+
+.ops-metric data {
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.ops-metric footer {
+  color: var(--ops-faint);
+  font-size: 13px;
+}
+
+.ops-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ops-muted);
+  white-space: nowrap;
+}
+
+.ops-status::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  background: var(--ops-idle);
+}
+
+.ops-status--ok::before {
+  background: var(--ops-ok);
+}
+
+.ops-status--charge::before {
+  background: var(--ops-charge);
+}
+
+.ops-status--warn::before {
+  background: var(--ops-warn);
+}
+
+.ops-status--danger::before {
+  background: var(--ops-danger);
+}
