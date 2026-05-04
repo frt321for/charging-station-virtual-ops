@@ -1,13 +1,21 @@
 import { useMemo, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
+import { BillingDraftPanel } from '../../components/operations/BillingDraftPanel'
 import { CommandPanel } from '../../components/operations/CommandPanel'
+import { LoadControlPanel } from '../../components/operations/LoadControlPanel'
 import { OverviewMetrics } from '../../components/operations/OverviewMetrics'
-import { QueuePanel } from '../../components/operations/QueuePanel'
+import { ReconciliationPanel } from '../../components/operations/ReconciliationPanel'
 import { SessionTable } from '../../components/operations/SessionTable'
 import { SimulatorPanel } from '../../components/operations/SimulatorPanel'
 import { StatusBadge } from '../../components/operations/StatusBadge'
 import { TopologyPanel } from '../../components/operations/TopologyPanel'
-import { useOperationsSnapshot, useRemoteCommand, useSessionDetail } from '../../hooks/useOperations'
+import {
+  useCreateLoadControlRecord,
+  useGenerateBillingDraft,
+  useOperationsSnapshot,
+  useRemoteCommand,
+  useSessionDetail,
+} from '../../hooks/useOperations'
 import { ApiError } from '../../services/api-client'
 import type { CommandPathType } from '../../types/operations'
 import { canRunCommand } from '../../utils/operations'
@@ -18,8 +26,9 @@ const navItems = [
   { id: 'ops-sessions', label: '会话' },
   { id: 'ops-command', label: '控制' },
   { id: 'ops-simulator', label: '模拟' },
-  { id: 'ops-queue', label: '负载' },
-  { id: 'ops-sla', label: 'SLA' },
+  { id: 'ops-load-control', label: '负载' },
+  { id: 'ops-billing', label: '计费' },
+  { id: 'ops-reconciliation', label: '核查' },
 ]
 
 export function OperationsPage() {
@@ -38,6 +47,8 @@ export function OperationsPage() {
   const activeConnectorCode = selectedConnectorCode ?? preferredSession?.connectorCode
   const detailQuery = useSessionDetail(activeSessionNo)
   const commandMutation = useRemoteCommand()
+  const billingMutation = useGenerateBillingDraft()
+  const loadControlMutation = useCreateLoadControlRecord()
   const targetPowerKwNumber = Number(targetPowerKw)
   const isTargetPowerValid =
     targetPowerKw.trim() !== '' && Number.isFinite(targetPowerKwNumber) && targetPowerKwNumber > 0
@@ -61,6 +72,16 @@ export function OperationsPage() {
     commandMutation.error instanceof ApiError
       ? `${commandMutation.error.message} / ${commandMutation.error.details ?? commandMutation.error.code}`
       : commandMutation.error?.message
+  const billingErrorMessage =
+    billingMutation.error instanceof ApiError
+      ? `${billingMutation.error.message} / ${billingMutation.error.details ?? billingMutation.error.code}`
+      : billingMutation.error?.message
+  const loadControlErrorMessage =
+    loadControlMutation.error instanceof ApiError
+      ? `${loadControlMutation.error.message} / ${
+          loadControlMutation.error.details ?? loadControlMutation.error.code
+        }`
+      : loadControlMutation.error?.message
   const lastMessage = commandMutation.data
     ? `${commandMutation.data.commandNo} / ${commandMutation.data.status}`
     : undefined
@@ -86,6 +107,10 @@ export function OperationsPage() {
       requestedBy: 'station-manager',
       targetPowerKw: commandType === 'limit-power' ? targetPowerKwNumber : undefined,
     })
+  }
+
+  function generateDraft(sessionNo: string) {
+    billingMutation.mutate({ sessionId: sessionNo, generatedBy: 'finance-reviewer' })
   }
 
   function activateSection(sectionId: string) {
@@ -177,15 +202,39 @@ export function OperationsPage() {
                 onStopSession={(sessionNo) => sendCommand('stop', sessionNo)}
               />
             </div>
+            <div id="ops-load-control">
+              <LoadControlPanel
+                site={snapshot?.site}
+                snapshot={snapshot?.loadControl}
+                isPending={loadControlMutation.isPending}
+                lastRecord={loadControlMutation.data}
+                errorMessage={loadControlErrorMessage}
+                onCreateRecord={(request) => loadControlMutation.mutate(request)}
+              />
+            </div>
+            <div id="ops-billing">
+              <BillingDraftPanel
+                sessions={snapshot?.sessions ?? []}
+                policies={snapshot?.pricingPolicies ?? []}
+                drafts={snapshot?.billingDrafts ?? []}
+                isPending={billingMutation.isPending}
+                lastDraft={billingMutation.data}
+                errorMessage={billingErrorMessage}
+                onGenerate={generateDraft}
+              />
+            </div>
+            <div id="ops-reconciliation">
+              <ReconciliationPanel exceptions={snapshot?.reconciliationExceptions ?? []} />
+            </div>
           </div>
           <aside className="ops-right">
             <div id="ops-command">
-            <CommandPanel
-              session={selectedDetail}
-              targetConnectorCode={activeConnectorCode}
-              targetPowerKw={targetPowerKw}
-              isTargetPowerValid={isTargetPowerValid}
-              isPending={commandMutation.isPending}
+              <CommandPanel
+                session={selectedDetail}
+                targetConnectorCode={activeConnectorCode}
+                targetPowerKw={targetPowerKw}
+                isTargetPowerValid={isTargetPowerValid}
+                isPending={commandMutation.isPending}
                 lastMessage={lastMessage}
                 errorMessage={errorMessage}
                 onTargetPowerChange={setTargetPowerKw}
@@ -195,7 +244,6 @@ export function OperationsPage() {
             <div id="ops-simulator">
               <SimulatorPanel />
             </div>
-            <QueuePanel sessions={snapshot?.sessions ?? []} queueId="ops-queue" slaId="ops-sla" />
             {detailQuery.isFetching ? <StatusBadge tone="charge">同步中</StatusBadge> : null}
           </aside>
         </div>

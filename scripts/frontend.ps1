@@ -29,6 +29,33 @@ function Get-ManagedProcess {
     return Get-Process -Id ([int]$pidText) -ErrorAction SilentlyContinue
 }
 
+function Stop-ProcessTree {
+    param([int]$ProcessId)
+
+    $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $ProcessId" -ErrorAction SilentlyContinue
+    foreach ($child in $children) {
+        Stop-ProcessTree -ProcessId $child.ProcessId
+    }
+
+    $process = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+    if ($process) {
+        Stop-Process -Id $ProcessId -Force
+    }
+}
+
+function Stop-FrontendPortOwners {
+    param([int]$TargetPort)
+
+    $connections = Get-NetTCPConnection -LocalPort $TargetPort -State Listen -ErrorAction SilentlyContinue
+    foreach ($connection in $connections) {
+        $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $($connection.OwningProcess)" -ErrorAction SilentlyContinue
+        if ($processInfo -and $processInfo.CommandLine -like "*$FrontendDir*" -and $processInfo.CommandLine -like "*vite*") {
+            Stop-ProcessTree -ProcessId $connection.OwningProcess
+            Write-Host "Stopped frontend port owner. PID: $($connection.OwningProcess)"
+        }
+    }
+}
+
 function Test-LocalPortOpen {
     param([int]$TargetPort)
 
@@ -83,12 +110,13 @@ function Start-Frontend {
 function Stop-Frontend {
     $process = Get-ManagedProcess
     if ($process) {
-        Stop-Process -Id $process.Id -Force
+        Stop-ProcessTree -ProcessId $process.Id
         Write-Host "Stopped frontend. PID: $($process.Id)"
     } else {
         Write-Host "Frontend is not running."
     }
 
+    Stop-FrontendPortOwners -TargetPort $Port
     Remove-Item -LiteralPath $PidFile -Force -ErrorAction SilentlyContinue
 }
 

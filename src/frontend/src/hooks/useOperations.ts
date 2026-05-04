@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  createLoadControlRecord,
   createRemoteCommand,
   createReservation,
+  generateBillingDraft,
   getOperationsSnapshot,
   getSessionDetail,
   getSimulatorStatus,
@@ -9,7 +11,12 @@ import {
   startSimulator,
   stopSimulator,
 } from '../services/operations-api'
-import type { CommandPathType, CreateReservationRequest, SimulatorRequest } from '../types/operations'
+import type {
+  CommandPathType,
+  CreateLoadControlRecordRequest,
+  CreateReservationRequest,
+  SimulatorRequest,
+} from '../types/operations'
 
 export function useOperationsSnapshot(siteCode?: string) {
   return useQuery({
@@ -54,6 +61,29 @@ export function useCreateReservation() {
 
   return useMutation({
     mutationFn: (request: CreateReservationRequest) => createReservation(request),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['operations'] })
+    },
+  })
+}
+
+export function useGenerateBillingDraft() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: { sessionId: string; generatedBy: string }) =>
+      generateBillingDraft(request.sessionId, { generatedBy: request.generatedBy }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['operations'] })
+    },
+  })
+}
+
+export function useCreateLoadControlRecord() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: CreateLoadControlRecordRequest) => createLoadControlRecord(request),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['operations'] })
     },

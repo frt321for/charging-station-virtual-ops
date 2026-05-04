@@ -6,8 +6,10 @@ import (
 
 	"charging-ops/backend/internal/common/health"
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/billing"
 	"charging-ops/backend/internal/domain/command"
 	"charging-ops/backend/internal/domain/gateway"
+	"charging-ops/backend/internal/domain/loadcontrol"
 	"charging-ops/backend/internal/domain/session"
 	"charging-ops/backend/internal/domain/simcontrol"
 	"charging-ops/backend/internal/domain/site"
@@ -20,6 +22,8 @@ func registerRoutes(
 	sessionHandler *session.Handler,
 	commandHandler *command.Handler,
 	gatewayHandler *gateway.Handler,
+	billingHandler *billing.Handler,
+	loadControlHandler *loadcontrol.Handler,
 	simulatorHandler *simcontrol.Handler,
 ) {
 	mux.HandleFunc("GET /api/v1/health", healthHandler.Check)
@@ -43,6 +47,12 @@ func registerRoutes(
 	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/alarms", gatewayHandler.Alarm)
 	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/command-receipts", commandHandler.Receipt)
 	mux.HandleFunc("POST /api/v1/gateway/chargers/{chargerCode}/offline", gatewayHandler.Offline)
+	mux.HandleFunc("GET /api/v1/pricing-policies", billingHandler.ListPolicies)
+	mux.HandleFunc("GET /api/v1/billing-drafts", billingHandler.ListDrafts)
+	mux.HandleFunc("POST /api/v1/sessions/{sessionId}/billing-draft", billingHandler.GenerateDraft)
+	mux.HandleFunc("GET /api/v1/reconciliation-exceptions", billingHandler.ListExceptions)
+	mux.HandleFunc("GET /api/v1/sites/{siteId}/load-control", loadControlHandler.Snapshot)
+	mux.HandleFunc("POST /api/v1/load-control/records", loadControlHandler.CreateRecord)
 	mux.HandleFunc("GET /api/v1/simulator/status", simulatorHandler.Status)
 	mux.HandleFunc("POST /api/v1/simulator/once", simulatorHandler.RunOnce)
 	mux.HandleFunc("POST /api/v1/simulator/start", simulatorHandler.Start)

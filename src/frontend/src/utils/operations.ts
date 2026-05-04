@@ -3,6 +3,8 @@ import type {
   CommandPathType,
   ConnectorNode,
   OperationsSnapshot,
+  LoadActionType,
+  LoadRecordStatus,
   SessionDetail,
   SessionStatus,
 } from '../types/operations'
@@ -21,10 +23,49 @@ export const sessionStatusLabels: Record<SessionStatus, string> = {
   cancelled: '已取消',
 }
 
+export const loadActionLabels: Record<LoadActionType, string> = {
+  limit_power: '限功率',
+  pause: '暂停',
+  resume: '恢复',
+  queue: '排队',
+  reject: '拒绝',
+  promote: '晋级',
+  release: '释放',
+}
+
+export const loadRecordStatusLabels: Record<LoadRecordStatus, string> = {
+  recommended: '建议',
+  sent: '已下发',
+  applied: '已生效',
+  rejected: '已拒绝',
+}
+
+export const billingStatusLabels = {
+  draft: '草稿',
+  confirmed: '已确认',
+  pending_review: '待核查',
+} as const
+
+export const exceptionSeverityLabels = {
+  low: '低',
+  medium: '中',
+  high: '高',
+  critical: '严重',
+} as const
+
 export function formatNumber(value: number, digits = 1): string {
   return new Intl.NumberFormat('zh-CN', {
     maximumFractionDigits: digits,
     minimumFractionDigits: digits,
+  }).format(value)
+}
+
+export function formatMoney(value: number): string {
+  return new Intl.NumberFormat('zh-CN', {
+    currency: 'CNY',
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: 'currency',
   }).format(value)
 }
 
@@ -34,6 +75,16 @@ export function formatCompactTime(value?: string): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value))
+}
+
+export function formatMinuteRange(startMinute: number, endMinute: number): string {
+  return `${formatMinute(startMinute)}-${formatMinute(endMinute)}`
+}
+
+function formatMinute(value: number): string {
+  const hour = Math.floor(value / 60)
+  const minute = value % 60
+  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
 }
 
 export function latestMeterPower(detail?: SessionDetail): number {

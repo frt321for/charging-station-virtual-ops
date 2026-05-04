@@ -1,8 +1,15 @@
 import type {
+  BillingDraft,
   CommandPathType,
   CreateCommandRequest,
+  CreateLoadControlRecordRequest,
   CreateReservationRequest,
+  GenerateBillingDraftRequest,
+  LoadControlRecord,
+  LoadControlSnapshot,
   OperationsSnapshot,
+  PricingPolicy,
+  ReconciliationException,
   RemoteCommand,
   SessionDetail,
   SessionSummary,
@@ -65,6 +72,50 @@ export async function createRemoteCommand(
   )
 }
 
+export async function listPricingPolicies(siteId: string): Promise<PricingPolicy[]> {
+  const data = await apiRequest<ListResponse<PricingPolicy>>(
+    `/api/v1/pricing-policies?siteId=${encodeURIComponent(siteId)}`,
+  )
+  return data.list
+}
+
+export async function listBillingDrafts(siteId: string): Promise<BillingDraft[]> {
+  const data = await apiRequest<ListResponse<BillingDraft>>(
+    `/api/v1/billing-drafts?siteId=${encodeURIComponent(siteId)}`,
+  )
+  return data.list
+}
+
+export async function generateBillingDraft(
+  sessionId: string,
+  request: GenerateBillingDraftRequest,
+): Promise<BillingDraft> {
+  return apiRequest<BillingDraft>(`/api/v1/sessions/${encodeURIComponent(sessionId)}/billing-draft`, {
+    method: 'POST',
+    body: jsonBody(request),
+  })
+}
+
+export async function listReconciliationExceptions(siteId: string): Promise<ReconciliationException[]> {
+  const data = await apiRequest<ListResponse<ReconciliationException>>(
+    `/api/v1/reconciliation-exceptions?siteId=${encodeURIComponent(siteId)}`,
+  )
+  return data.list
+}
+
+export async function getLoadControlSnapshot(siteId: string): Promise<LoadControlSnapshot> {
+  return apiRequest<LoadControlSnapshot>(`/api/v1/sites/${encodeURIComponent(siteId)}/load-control`)
+}
+
+export async function createLoadControlRecord(
+  request: CreateLoadControlRecordRequest,
+): Promise<LoadControlRecord> {
+  return apiRequest<LoadControlRecord>('/api/v1/load-control/records', {
+    method: 'POST',
+    body: jsonBody(request),
+  })
+}
+
 export async function getSimulatorStatus(): Promise<SimulatorStatus> {
   return apiRequest<SimulatorStatus>('/api/v1/simulator/status')
 }
@@ -99,10 +150,15 @@ export async function getOperationsSnapshot(siteCode?: string): Promise<Operatio
   }
 
   const sessions = allSessions.filter((session) => session.siteId === site.id)
-  const topology = await getSiteTopology(site.code)
-  const detailResults = await Promise.allSettled(
-    sessions.slice(0, 12).map((session) => getSessionDetail(session.sessionNo)),
-  )
+  const [topology, pricingPolicies, billingDrafts, reconciliationExceptions, loadControl, detailResults] =
+    await Promise.all([
+      getSiteTopology(site.code),
+      listPricingPolicies(site.code),
+      listBillingDrafts(site.code),
+      listReconciliationExceptions(site.code),
+      getLoadControlSnapshot(site.code),
+      Promise.allSettled(sessions.slice(0, 12).map((session) => getSessionDetail(session.sessionNo))),
+    ])
   const sessionDetails = detailResults.flatMap((result) =>
     result.status === 'fulfilled' ? [result.value] : [],
   )
@@ -113,5 +169,9 @@ export async function getOperationsSnapshot(siteCode?: string): Promise<Operatio
     topology,
     sessions,
     sessionDetails,
+    pricingPolicies,
+    billingDrafts,
+    reconciliationExceptions,
+    loadControl,
   }
 }

@@ -45,6 +45,17 @@
 
 `siteId` 支持站点 UUID 或站点编码。`sessionId` 支持会话 UUID 或会话编号。
 
+## Phase 2 计费、排队与负载控制接口
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| `GET` | `/api/v1/pricing-policies?siteId=HQ-CAMPUS` | 查询站点定价策略及分时价格版本 |
+| `GET` | `/api/v1/billing-drafts?siteId=HQ-CAMPUS` | 查询最近账单草稿 |
+| `POST` | `/api/v1/sessions/{sessionId}/billing-draft` | 根据会话读数、时长和当前定价策略生成账单草稿 |
+| `GET` | `/api/v1/reconciliation-exceptions?siteId=HQ-CAMPUS` | 查询能量、时长、金额、停止原因异常核查队列 |
+| `GET` | `/api/v1/sites/{siteId}/load-control` | 查询站点负载策略、当前负载、队列和控制记录 |
+| `POST` | `/api/v1/load-control/records` | 写入人工负载控制记录 |
+
 ## 会话状态流转
 
 当前后端强制校验以下状态流转：
@@ -238,3 +249,31 @@ pending_review -> billed | cancelled
 ```
 
 `loadCurve` 支持 `commute`、`flat`、`random`。`onlineRate` 和 `faultRate` 范围为 `0` 到 `1`。
+
+## 账单草稿生成请求
+
+```json
+{
+  "generatedBy": "finance-reviewer"
+}
+```
+
+会话状态必须是 `pending_billing`、`pending_review` 或 `billed`。后端会优先使用会话起止电表读数；如果会话起止读数为空，则使用时序读数的首末值。电量、时长、金额或停止原因异常会同步写入核查队列。
+
+## 负载控制记录请求
+
+```json
+{
+  "siteId": "HQ-CAMPUS",
+  "sessionId": "CS-20260504000000.000000000",
+  "actionType": "limit_power",
+  "reason": "site-load-limit",
+  "beforeLoadKw": 62.4,
+  "afterLoadKw": 57.1,
+  "targetPowerKw": 3.5,
+  "status": "applied",
+  "operatorName": "station-manager"
+}
+```
+
+`actionType` 支持 `limit_power`、`pause`、`resume`、`queue`、`reject`、`promote`、`release`。`status` 支持 `recommended`、`sent`、`applied`、`rejected`。`sessionId` 可为空；为空时记录站点级控制决策。

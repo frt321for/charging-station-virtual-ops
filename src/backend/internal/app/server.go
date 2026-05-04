@@ -9,8 +9,10 @@ import (
 
 	"charging-ops/backend/internal/common/config"
 	"charging-ops/backend/internal/common/health"
+	"charging-ops/backend/internal/domain/billing"
 	"charging-ops/backend/internal/domain/command"
 	"charging-ops/backend/internal/domain/gateway"
+	"charging-ops/backend/internal/domain/loadcontrol"
 	"charging-ops/backend/internal/domain/session"
 	"charging-ops/backend/internal/domain/simcontrol"
 	"charging-ops/backend/internal/domain/site"
@@ -61,11 +63,23 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 	sessionHandler := session.NewHandler(session.NewService(session.NewRepository(dbClient)))
 	commandHandler := command.NewHandler(command.NewService(command.NewRepository(dbClient)))
 	gatewayHandler := gateway.NewHandler(gateway.NewService(gateway.NewRepository(dbClient)))
+	billingHandler := billing.NewHandler(billing.NewService(billing.NewRepository(dbClient)))
+	loadControlHandler := loadcontrol.NewHandler(loadcontrol.NewService(loadcontrol.NewRepository(dbClient)))
 	simulatorService := simcontrol.NewService(localAPIBase(cfg.HTTPHost, cfg.HTTPPort), logger)
 	simulatorHandler := simcontrol.NewHandler(simulatorService)
 
 	mux := http.NewServeMux()
-	registerRoutes(mux, healthHandler, siteHandler, sessionHandler, commandHandler, gatewayHandler, simulatorHandler)
+	registerRoutes(
+		mux,
+		healthHandler,
+		siteHandler,
+		sessionHandler,
+		commandHandler,
+		gatewayHandler,
+		billingHandler,
+		loadControlHandler,
+		simulatorHandler,
+	)
 
 	httpServer := &http.Server{
 		Addr:              cfg.HTTPHost + ":" + cfg.HTTPPort,

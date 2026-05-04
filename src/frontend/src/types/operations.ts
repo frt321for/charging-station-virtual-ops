@@ -163,6 +163,130 @@ export interface RemoteCommand {
   acknowledgedAt?: string
 }
 
+export interface PricingPeriod {
+  id: string
+  label: string
+  startMinute: number
+  endMinute: number
+  energyPricePerKwh: number
+  serviceFeePerKwh: number
+  occupancyFeePerMinute: number
+}
+
+export interface PricingPolicy {
+  id: string
+  siteId: string
+  siteCode: string
+  code: string
+  name: string
+  version: number
+  chargerType: string
+  effectiveFrom: string
+  effectiveTo?: string
+  status: 'draft' | 'active' | 'retired'
+  periods: PricingPeriod[]
+}
+
+export interface BillingDraft {
+  id: string
+  billNo: string
+  sessionId: string
+  sessionNo: string
+  siteId: string
+  siteCode: string
+  connectorCode: string
+  pricingPolicyId: string
+  policyCode: string
+  policyVersion: number
+  energyKwh: number
+  durationMinutes: number
+  energyAmount: number
+  serviceAmount: number
+  occupancyAmount: number
+  totalAmount: number
+  currency: string
+  status: 'draft' | 'confirmed' | 'pending_review'
+  exceptionFlag: boolean
+  generatedBy: string
+  generatedAt: string
+}
+
+export interface ReconciliationException {
+  id: string
+  exceptionNo: string
+  billId: string
+  billNo: string
+  sessionId: string
+  sessionNo: string
+  exceptionType: 'energy' | 'duration' | 'amount' | 'stop_reason'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  status: 'open' | 'reviewing' | 'resolved'
+  reason: string
+  suggestedAction: string
+  detectedAt: string
+  resolvedAt?: string
+}
+
+export interface LoadPolicy {
+  id: string
+  siteId: string
+  scopeType: 'site' | 'area' | 'group'
+  scopeCode: string
+  scopeName: string
+  thresholdKw: number
+  warningKw: number
+  actionMode: 'limit_power' | 'pause' | 'queue' | 'reject'
+  version: number
+  status: 'draft' | 'active' | 'retired'
+}
+
+export interface QueueItem {
+  position: number
+  sessionId: string
+  sessionNo: string
+  connectorCode: string
+  status: SessionStatus
+  reservationExpiry?: string
+  waitMinutes: number
+  reason: string
+  updatedAt: string
+}
+
+export type LoadActionType = 'limit_power' | 'pause' | 'resume' | 'queue' | 'reject' | 'promote' | 'release'
+export type LoadRecordStatus = 'recommended' | 'sent' | 'applied' | 'rejected'
+
+export interface LoadControlRecord {
+  id: string
+  recordNo: string
+  siteId: string
+  siteCode: string
+  scopeCode: string
+  sessionId?: string
+  sessionNo: string
+  connectorCode: string
+  actionType: LoadActionType
+  triggerType: 'manual' | 'auto'
+  reason: string
+  beforeLoadKw: number
+  afterLoadKw: number
+  targetPowerKw?: number
+  status: LoadRecordStatus
+  operatorName: string
+  createdAt: string
+}
+
+export interface LoadControlSnapshot {
+  siteId: string
+  siteCode: string
+  siteName: string
+  currentLoadKw: number
+  loadLimitKw: number
+  availableCapacityKw: number
+  policies: LoadPolicy[]
+  queue: QueueItem[]
+  records: LoadControlRecord[]
+}
+
 export interface CreateReservationRequest {
   connectorCode: string
   reservationMinutes: number
@@ -174,6 +298,22 @@ export interface CreateCommandRequest {
   requestedBy: string
   targetPowerKw?: number
   payload?: Record<string, unknown>
+}
+
+export interface CreateLoadControlRecordRequest {
+  siteId: string
+  sessionId?: string
+  actionType: LoadActionType
+  reason: string
+  beforeLoadKw: number
+  afterLoadKw: number
+  targetPowerKw?: number
+  status: LoadRecordStatus
+  operatorName: string
+}
+
+export interface GenerateBillingDraftRequest {
+  generatedBy: string
 }
 
 export interface SimulatorRequest {
@@ -212,4 +352,8 @@ export interface OperationsSnapshot {
   topology: SiteTopology
   sessions: SessionSummary[]
   sessionDetails: SessionDetail[]
+  pricingPolicies: PricingPolicy[]
+  billingDrafts: BillingDraft[]
+  reconciliationExceptions: ReconciliationException[]
+  loadControl: LoadControlSnapshot
 }

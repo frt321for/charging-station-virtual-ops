@@ -10,13 +10,11 @@ interface OverviewMetricsProps {
 
 export function OverviewMetrics({ snapshot, isLoading }: OverviewMetricsProps) {
   const site = snapshot?.site
-  const currentLoad = currentLoadKw(snapshot)
-  const loadLimit = site?.loadLimitKw ?? 0
+  const currentLoad = snapshot?.loadControl.currentLoadKw ?? currentLoadKw(snapshot)
+  const loadLimit = snapshot?.loadControl.loadLimitKw ?? site?.loadLimitKw ?? 0
   const loadRatio = loadLimit > 0 ? Math.min(100, (currentLoad / loadLimit) * 100) : 0
-  const reviewCount = snapshot?.sessions.filter((session) => session.status === 'pending_review').length ?? 0
-  const queueCount =
-    snapshot?.sessions.filter((session) => session.status === 'reserved' || session.status === 'waiting_arrival')
-      .length ?? 0
+  const reviewCount = snapshot?.reconciliationExceptions.length ?? 0
+  const queueCount = snapshot?.loadControl.queue.length ?? 0
 
   if (isLoading) {
     return (
