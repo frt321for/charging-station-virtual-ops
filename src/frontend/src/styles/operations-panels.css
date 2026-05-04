@@ -128,6 +128,8 @@
 .ops-billing-body,
 .ops-load-control,
 .ops-maintenance,
+.ops-ai,
+.ops-session-detail,
 .ops-event-list,
 .ops-queue-list,
 .ops-reconciliation-list,
@@ -231,6 +233,8 @@
 .ops-billing-body,
 .ops-load-control,
 .ops-maintenance,
+.ops-ai,
+.ops-session-detail,
 .ops-reconciliation-list {
   display: grid;
   gap: 16px;
@@ -242,7 +246,8 @@
 .ops-transition-form,
 .ops-finance-form,
 .ops-correction-grid,
-.ops-confirm-row {
+.ops-confirm-row,
+.ops-ai-form {
   display: grid;
   gap: 12px;
 }
@@ -258,7 +263,9 @@
 .ops-transition-form label,
 .ops-finance-form label,
 .ops-correction-grid label,
-.ops-confirm-row label {
+.ops-confirm-row label,
+.ops-ai-form label,
+.ops-ai-result label {
   display: grid;
   gap: 8px;
   color: var(--ops-muted);
@@ -275,7 +282,10 @@
 .ops-finance-form select,
 .ops-finance-form input,
 .ops-correction-grid input,
-.ops-confirm-row select {
+.ops-confirm-row select,
+.ops-ai-form select,
+.ops-ai-form input,
+.ops-ai-result textarea {
   min-height: 44px;
   border: 1px solid var(--ops-line-strong);
   border-radius: 0;
@@ -284,12 +294,20 @@
   padding: 0 12px;
 }
 
+.ops-ai-result textarea {
+  min-height: 236px;
+  padding: 12px;
+  resize: vertical;
+  line-height: 1.7;
+}
+
 .ops-billing-form button,
 .ops-wide-button,
 .ops-transition-form button,
 .ops-finance-form button,
 .ops-correction-grid button,
-.ops-confirm-row button {
+.ops-confirm-row button,
+.ops-ai-form button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -397,6 +415,65 @@
 .ops-record-list code {
   color: var(--ops-muted);
   font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.ops-detail-grid,
+.ops-meter-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ops-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ops-detail-grid > div,
+.ops-meter-list > div {
+  border: 1px solid var(--ops-line);
+  background: #111713;
+}
+
+.ops-detail-grid > div {
+  display: grid;
+  gap: 7px;
+  min-height: 78px;
+  padding: 13px;
+}
+
+.ops-detail-grid span,
+.ops-detail-title span,
+.ops-meter-list time,
+.ops-meter-list span {
+  color: var(--ops-muted);
+}
+
+.ops-detail-grid strong,
+.ops-meter-list strong {
+  overflow-wrap: anywhere;
+}
+
+.ops-detail-grid strong,
+.ops-meter-list strong,
+.ops-meter-list span {
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 13px;
+}
+
+.ops-detail-title,
+.ops-meter-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ops-meter-list > div {
+  min-height: 46px;
+  padding: 0 12px;
+}
+
+.ops-session-empty {
+  padding: 18px;
 }
 
 .ops-exception-item {
@@ -536,6 +613,53 @@
   align-items: end;
 }
 
+.ops-ai-form {
+  grid-template-columns: minmax(150px, 0.45fr) minmax(280px, 1fr) minmax(104px, auto);
+  align-items: end;
+}
+
+.ops-ai-question {
+  grid-column: span 1;
+}
+
+.ops-ai-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.36fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.ops-ai-result--plain {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ops-ai-result--plain {
+  grid-template-columns: 1fr;
+}
+
+.ops-ai-side {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.ops-ai-side > div {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--ops-line);
+  background: #111713;
+  padding: 14px;
+}
+
+.ops-ai-side strong {
+  color: var(--ops-ink);
+}
+
+.ops-ai-side span {
+  color: var(--ops-muted);
+  overflow-wrap: anywhere;
+}
+
 .ops-queue-item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -572,6 +696,168 @@
   overflow-wrap: anywhere;
 }
 
+.ops-access-grid,
+.ops-audit-body {
+  display: grid;
+  gap: 18px;
+}
+
+.ops-role-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ops-role-list article {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--ops-line);
+  background: var(--ops-panel-2);
+  padding: 14px;
+}
+
+.ops-role-list article > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ops-role-list p {
+  margin: 0;
+  color: var(--ops-muted);
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.ops-audit-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.ops-audit-filters label {
+  display: grid;
+  gap: 8px;
+  color: var(--ops-muted);
+  font-size: 13px;
+}
+
+.ops-audit-filters input,
+.ops-audit-filters button {
+  min-height: 44px;
+  border: 1px solid var(--ops-line-strong);
+  border-radius: 0;
+  background: #111713;
+  color: var(--ops-ink);
+  padding: 0 12px;
+}
+
+.ops-audit-filters button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ops-config-panel,
+.ops-config-grid,
+.ops-form-grid {
+  min-width: 0;
+}
+
+.ops-config-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.ops-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.ops-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px;
+}
+
+.ops-form-grid h2,
+.ops-form-grid button,
+.ops-config-wide,
+.ops-price-period {
+  grid-column: 1 / -1;
+}
+
+.ops-form-grid label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: var(--ops-muted);
+  font-size: 13px;
+}
+
+.ops-form-grid input,
+.ops-form-grid select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--ops-line-strong);
+  border-radius: 0;
+  background: #111713;
+  color: var(--ops-ink);
+  padding: 0 12px;
+}
+
+.ops-form-grid button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--ops-accent);
+  border-radius: 0;
+  background: var(--ops-accent);
+  color: #16150d;
+  font-weight: 720;
+}
+
+.ops-form-grid button:disabled {
+  border-color: var(--ops-line-strong);
+  background: #171d18;
+  color: var(--ops-faint);
+  cursor: not-allowed;
+}
+
+.ops-config-wide {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ops-price-period {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.8fr) repeat(5, minmax(96px, 1fr));
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--ops-line);
+  background: #111713;
+  padding: 12px;
+}
+
+.ops-price-period legend {
+  padding: 0 6px;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+
+.ops-price-period input {
+  min-height: 40px;
+}
+
 .ops-page-error {
   margin: 18px auto;
   width: min(100% - 36px, 760px);
@@ -605,7 +891,7 @@
 }
 
 @media (max-width: 1200px) {
-  .ops-topline,
+  .ops-headbar,
   .ops-main,
   .ops-hero,
   .ops-topology {
@@ -623,7 +909,7 @@
 }
 
 @media (max-width: 760px) {
-  .ops-topline {
+  .ops-headbar {
     padding: 14px 12px;
   }
 
@@ -635,19 +921,26 @@
   .ops-ports,
   .ops-sim-body,
   .ops-sim-actions,
-    .ops-billing-form,
-    .ops-price-strip,
-    .ops-policy-grid,
-    .ops-load-form,
-    .ops-maintenance-form,
-    .ops-maintenance-grid,
-    .ops-transition-form,
-    .ops-finance-form,
-    .ops-correction-grid,
-    .ops-confirm-row,
-    .ops-sla-grid,
-    .ops-limit,
-    .ops-actions {
+  .ops-billing-form,
+  .ops-price-strip,
+  .ops-policy-grid,
+  .ops-load-form,
+  .ops-maintenance-form,
+  .ops-maintenance-grid,
+  .ops-transition-form,
+  .ops-finance-form,
+  .ops-correction-grid,
+  .ops-confirm-row,
+  .ops-ai-form,
+  .ops-ai-result,
+  .ops-sla-grid,
+  .ops-audit-filters,
+  .ops-config-grid,
+  .ops-form-grid,
+  .ops-config-wide,
+  .ops-price-period,
+  .ops-limit,
+  .ops-actions {
     grid-template-columns: 1fr;
   }
 

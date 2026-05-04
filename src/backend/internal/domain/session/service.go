@@ -6,14 +6,23 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"charging-ops/backend/internal/domain/auth"
 )
 
 type repository interface {
 	List(ctx context.Context) ([]Summary, error)
 	Get(ctx context.Context, sessionID string) (Detail, error)
+	GetBoundary(ctx context.Context, sessionID string) (siteBoundary, error)
 	GetStatus(ctx context.Context, sessionID string) (Status, error)
+	GetConnectorBoundary(ctx context.Context, connectorCode string) (siteBoundary, error)
 	CreateReservation(ctx context.Context, params CreateReservationParams) (string, error)
 	AppendTransition(ctx context.Context, params TransitionParams) error
+}
+
+type siteBoundary struct {
+	SiteID   string
+	SiteCode string
 }
 
 // Service coordinates charging session lifecycle operations.
@@ -28,16 +37,41 @@ func NewService(repository repository) *Service {
 
 // List returns recent charging sessions.
 func (s *Service) List(ctx context.Context) ([]Summary, error) {
-	return s.repository.List(ctx)
+	sessions, err := s.repository.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	filtered := sessions[:0]
+	for _, summary := range sessions {
+		if auth.CanAccessSite(ctx, summary.SiteID, "") {
+			filtered = append(filtered, summary)
+		}
+	}
+	return filtered, nil
 }
 
 // Get returns one charging session with its timeline.
 func (s *Service) Get(ctx context.Context, sessionID string) (Detail, error) {
-	return s.repository.Get(ctx, sessionID)
+	detail, err := s.repository.Get(ctx, sessionID)
+	if err != nil {
+		return Detail{}, err
+	}
+	if !auth.CanAccessSite(ctx, detail.SiteID, "") {
+		return Detail{}, auth.ErrForbidden
+	}
+	return detail, nil
 }
 
 // Transition validates and persists a lifecycle transition.
 func (s *Service) Transition(ctx context.Context, params TransitionParams) (Detail, error) {
+	boundary, err := s.repository.GetBoundary(ctx, params.SessionID)
+	if err != nil {
+		return Detail{}, err
+	}
+	if !auth.CanAccessSite(ctx, boundary.SiteID, boundary.SiteCode) {
+		return Detail{}, auth.ErrForbidden
+	}
+
 	current, err := s.repository.GetStatus(ctx, params.SessionID)
 	if err != nil {
 		return Detail{}, err
@@ -52,7 +86,7 @@ func (s *Service) Transition(ctx context.Context, params TransitionParams) (Deta
 		return Detail{}, err
 	}
 
-	return s.repository.Get(ctx, params.SessionID)
+	return s.Get(ctx, params.SessionID)
 }
 
 // CreateReservation creates a waiting-arrival session for a connector.
@@ -61,12 +95,19 @@ func (s *Service) CreateReservation(ctx context.Context, params CreateReservatio
 	if params.ConnectorCode == "" {
 		return Detail{}, fmt.Errorf("%w: missing connector code", ErrInvalidReservation)
 	}
+	boundary, err := s.repository.GetConnectorBoundary(ctx, params.ConnectorCode)
+	if err != nil {
+		return Detail{}, err
+	}
+	if !auth.CanAccessSite(ctx, boundary.SiteID, boundary.SiteCode) {
+		return Detail{}, auth.ErrForbidden
+	}
 
 	sessionNo, err := s.repository.CreateReservation(ctx, params)
 	if err != nil {
 		return Detail{}, err
 	}
-	return s.repository.Get(ctx, sessionNo)
+	return s.Get(ctx, sessionNo)
 }
 
 // ErrInvalidReservation is returned when a reservation request is invalid.

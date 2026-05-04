@@ -27,6 +27,44 @@ func NewRepository(database *database.Client) *Repository {
 	return &Repository{database: database}
 }
 
+// FindExceptionBoundary returns the site boundary for one reconciliation exception.
+func (r *Repository) FindExceptionBoundary(ctx context.Context, exceptionID string) (siteBoundary, error) {
+	var boundary siteBoundary
+	err := r.database.Pool().QueryRow(ctx, `
+		SELECT s.id::text, s.code
+		FROM reconciliation_exceptions re
+		INNER JOIN charging_sessions cs ON cs.id = re.session_id
+		INNER JOIN sites s ON s.id = cs.site_id
+		WHERE re.deleted_at IS NULL AND (re.id::text = $1 OR re.exception_no = $1)
+	`, exceptionID).Scan(&boundary.SiteID, &boundary.SiteCode)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return siteBoundary{}, ErrNotFound
+	}
+	if err != nil {
+		return siteBoundary{}, fmt.Errorf("query exception boundary: %w", err)
+	}
+	return boundary, nil
+}
+
+// FindBillBoundary returns the site boundary for one billing draft.
+func (r *Repository) FindBillBoundary(ctx context.Context, billID string) (siteBoundary, error) {
+	var boundary siteBoundary
+	err := r.database.Pool().QueryRow(ctx, `
+		SELECT s.id::text, s.code
+		FROM billing_drafts bd
+		INNER JOIN charging_sessions cs ON cs.id = bd.session_id
+		INNER JOIN sites s ON s.id = cs.site_id
+		WHERE bd.deleted_at IS NULL AND (bd.id::text = $1 OR bd.bill_no = $1)
+	`, billID).Scan(&boundary.SiteID, &boundary.SiteCode)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return siteBoundary{}, ErrNotFound
+	}
+	if err != nil {
+		return siteBoundary{}, fmt.Errorf("query bill boundary: %w", err)
+	}
+	return boundary, nil
+}
+
 // ReviewException updates one reconciliation exception.
 func (r *Repository) ReviewException(ctx context.Context, params ReviewParams) error {
 	tx, err := r.database.Pool().Begin(ctx)

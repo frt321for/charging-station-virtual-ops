@@ -86,6 +86,11 @@ func (r *Repository) CreateRecord(ctx context.Context, params CreateRecordParams
 	return r.getRecord(ctx, recordID)
 }
 
+// FindRecordTarget resolves the site boundary for a load-control write before persistence.
+func (r *Repository) FindRecordTarget(ctx context.Context, siteID string, sessionID string) (recordTarget, error) {
+	return r.findRecordTarget(ctx, siteID, sessionID)
+}
+
 func (r *Repository) loadSiteSnapshot(ctx context.Context, siteID string) (Snapshot, error) {
 	var snapshot Snapshot
 	err := r.database.Pool().QueryRow(ctx, `

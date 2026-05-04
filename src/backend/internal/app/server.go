@@ -9,8 +9,12 @@ import (
 
 	"charging-ops/backend/internal/common/config"
 	"charging-ops/backend/internal/common/health"
+	"charging-ops/backend/internal/domain/aiops"
+	"charging-ops/backend/internal/domain/audit"
+	"charging-ops/backend/internal/domain/auth"
 	"charging-ops/backend/internal/domain/billing"
 	"charging-ops/backend/internal/domain/command"
+	"charging-ops/backend/internal/domain/configmgmt"
 	"charging-ops/backend/internal/domain/finance"
 	"charging-ops/backend/internal/domain/gateway"
 	"charging-ops/backend/internal/domain/loadcontrol"
@@ -69,6 +73,14 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 	loadControlHandler := loadcontrol.NewHandler(loadcontrol.NewService(loadcontrol.NewRepository(dbClient)))
 	maintenanceHandler := maintenance.NewHandler(maintenance.NewService(maintenance.NewRepository(dbClient)))
 	financeHandler := finance.NewHandler(finance.NewService(finance.NewRepository(dbClient)))
+	authService := auth.NewService(auth.NewRepository(dbClient))
+	authHandler := auth.NewHandler(authService)
+	auditHandler := audit.NewHandler(audit.NewService(audit.NewRepository(dbClient)))
+	configHandler := configmgmt.NewHandler(configmgmt.NewService(configmgmt.NewRepository(dbClient)))
+	aiHandler := aiops.NewHandler(aiops.NewService(
+		aiops.NewRepository(dbClient),
+		aiops.NewModelScopeGenerator(cfg.ModelScopeBaseURL, cfg.ModelScopeModel, cfg.ModelScopeAPIKey),
+	))
 	simulatorService := simcontrol.NewService(localAPIBase(cfg.HTTPHost, cfg.HTTPPort), logger)
 	simulatorHandler := simcontrol.NewHandler(simulatorService)
 
@@ -85,6 +97,11 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 		maintenanceHandler,
 		financeHandler,
 		simulatorHandler,
+		authHandler,
+		authService,
+		auditHandler,
+		aiHandler,
+		configHandler,
 	)
 
 	httpServer := &http.Server{

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/auth.css";
 @import "./styles/operations-shell.css";
 @import "./styles/operations-panels.css";
 

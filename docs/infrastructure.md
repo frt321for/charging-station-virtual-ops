@@ -107,6 +107,62 @@ AI 助手使用 OpenAI-compatible API 形态接入。
 
 真实 API key 是密钥，不允许提交到仓库、不允许写入普通文档、不允许在命令输出中回显。
 
+### 临时注入真实 key 并启动后端
+
+推荐在当前 PowerShell 会话里临时输入 key，不把 key 写进命令文本和仓库文件：
+
+```powershell
+$secret = Read-Host "MODELSCOPE_API_KEY" -AsSecureString
+$bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
+try {
+  $env:MODELSCOPE_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+} finally {
+  [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+}
+
+$env:MODELSCOPE_BASE_URL = "https://api-inference.modelscope.cn/v1"
+$env:MODELSCOPE_MODEL = "deepseek-ai/DeepSeek-V3.2"
+.\scripts\backend.ps1 restart
+```
+
+`backend.ps1` 会把当前 PowerShell 进程里的环境变量传给 `.run/backend-api.exe`。验证真实模型是否接通：
+
+```powershell
+.\scripts\verify-ai.ps1 -ExpectProvider modelscope
+```
+
+如果输出 `AI provider: modelscope`，说明真实 ModelScope 调用已生效；如果输出 `local-fallback` 或脚本报 `unexpected AI provider`，说明后端启动时没有拿到 `MODELSCOPE_API_KEY`。
+
+测试完成后，如需恢复本地 fallback 运行：
+
+```powershell
+Remove-Item Env:\MODELSCOPE_API_KEY -ErrorAction SilentlyContinue
+.\scripts\backend.ps1 restart
+```
+
+### 使用本地忽略文件配置 key
+
+也可以把密钥放到仓库根目录的 `.env.local`。该文件已被 `.gitignore` 忽略，不会提交，但仍然只适合本机开发环境：
+
+```text
+MODELSCOPE_BASE_URL=https://api-inference.modelscope.cn/v1
+MODELSCOPE_MODEL=deepseek-ai/DeepSeek-V3.2
+MODELSCOPE_API_KEY=replace-with-real-local-secret
+```
+
+写入后重启后端并验证：
+
+```powershell
+.\scripts\backend.ps1 restart
+.\scripts\verify-ai.ps1 -ExpectProvider modelscope
+```
+
+如需一次性通过参数完成临时注入、重启和验证：
+
+```powershell
+.\scripts\verify-ai.ps1 -ModelScopeApiKey "<your-modelscope-key>" -RestartBackend -ExpectProvider modelscope
+```
+
 ## 浏览器全量回归要求
 
 前端存在后，功能完成标准必须包括真实浏览器验证：

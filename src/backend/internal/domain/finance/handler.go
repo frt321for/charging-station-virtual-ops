@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/auth"
 )
 
 // Handler serves finance reconciliation APIs.
@@ -124,6 +125,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		response.Error(w, r, http.StatusNotFound, 30001, "财务对象不存在", "finance object not found")
 	case errors.Is(err, ErrInvalidReview):
 		response.Error(w, r, http.StatusBadRequest, 30050, "核查处理不合法", "invalid reconciliation review")
+	case errors.Is(err, auth.ErrForbidden):
+		response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
 	default:
 		response.Error(w, r, http.StatusInternalServerError, 50002, "财务处理失败", "finance operation failed")
 	}

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/auth"
 )
 
 // Handler serves pricing, billing, and reconciliation APIs.
@@ -79,6 +80,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		response.Error(w, r, http.StatusNotFound, 30001, "计费对象不存在", "billing object not found")
 	case errors.Is(err, ErrInvalidDraft):
 		response.Error(w, r, http.StatusBadRequest, 30020, "账单草稿无法生成", "invalid billing draft")
+	case errors.Is(err, auth.ErrForbidden):
+		response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
 	default:
 		response.Error(w, r, http.StatusInternalServerError, 50002, "计费处理失败", "billing operation failed")
 	}

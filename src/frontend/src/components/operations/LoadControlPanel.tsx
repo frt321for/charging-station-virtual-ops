@@ -17,6 +17,8 @@ interface LoadControlPanelProps {
   isPending: boolean
   lastRecord?: LoadControlRecord
   errorMessage?: string
+  canWrite: boolean
+  operatorName: string
   onCreateRecord: (request: CreateLoadControlRecordRequest) => void
 }
 
@@ -29,6 +31,8 @@ export function LoadControlPanel({
   isPending,
   lastRecord,
   errorMessage,
+  canWrite,
+  operatorName,
   onCreateRecord,
 }: LoadControlPanelProps) {
   const [targetSessionNo, setTargetSessionNo] = useState('')
@@ -63,7 +67,7 @@ export function LoadControlPanel({
     (actionType !== 'limit_power' || isTargetPowerValid)
 
   function submitRecord() {
-    if (!snapshot || !canSubmit) return
+    if (!snapshot || !canWrite || !canSubmit) return
     onCreateRecord({
       siteId: snapshot.siteCode,
       sessionId: selectedQueueItem?.sessionNo,
@@ -73,7 +77,7 @@ export function LoadControlPanel({
       afterLoadKw: afterLoad,
       targetPowerKw: actionType === 'limit_power' ? targetPower : undefined,
       status: recordStatus,
-      operatorName: 'station-manager',
+      operatorName,
     })
   }
 
@@ -185,7 +189,7 @@ export function LoadControlPanel({
             />
           </label>
         </div>
-        <button type="button" className="ops-wide-button" disabled={isPending || !canSubmit} onClick={submitRecord}>
+        <button type="button" className="ops-wide-button" disabled={!canWrite || isPending || !canSubmit} onClick={submitRecord}>
           <SlidersHorizontal size={16} aria-hidden="true" />
           写入记录
         </button>

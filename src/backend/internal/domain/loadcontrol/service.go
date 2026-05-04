@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"charging-ops/backend/internal/domain/auth"
 )
 
 type repository interface {
 	Snapshot(ctx context.Context, siteID string) (Snapshot, error)
+	FindRecordTarget(ctx context.Context, siteID string, sessionID string) (recordTarget, error)
 	CreateRecord(ctx context.Context, params CreateRecordParams) (LoadControlRecord, error)
 }
 
@@ -23,7 +26,14 @@ func NewService(repository repository) *Service {
 
 // Snapshot returns the load-control console state for a site.
 func (s *Service) Snapshot(ctx context.Context, siteID string) (Snapshot, error) {
-	return s.repository.Snapshot(ctx, strings.TrimSpace(siteID))
+	snapshot, err := s.repository.Snapshot(ctx, strings.TrimSpace(siteID))
+	if err != nil {
+		return Snapshot{}, err
+	}
+	if !auth.CanAccessSite(ctx, snapshot.SiteID, snapshot.SiteCode) {
+		return Snapshot{}, auth.ErrForbidden
+	}
+	return snapshot, nil
 }
 
 // CreateRecord validates and persists a manual load-control decision.
@@ -56,6 +66,16 @@ func (s *Service) CreateRecord(ctx context.Context, params CreateRecordParams) (
 	if params.BeforeLoadKW < 0 || params.AfterLoadKW < 0 {
 		return LoadControlRecord{}, fmt.Errorf("%w: invalid load value", ErrInvalidRecord)
 	}
+	target, err := s.repository.FindRecordTarget(ctx, params.SiteID, params.SessionID)
+	if err != nil {
+		return LoadControlRecord{}, err
+	}
+	if !matchesRequestedSite(params.SiteID, target) {
+		return LoadControlRecord{}, auth.ErrForbidden
+	}
+	if !auth.CanAccessSite(ctx, target.SiteID, target.SiteCode) {
+		return LoadControlRecord{}, auth.ErrForbidden
+	}
 	return s.repository.CreateRecord(ctx, params)
 }
 
@@ -66,6 +86,10 @@ func validAction(action string) bool {
 	default:
 		return false
 	}
+}
+
+func matchesRequestedSite(siteID string, target recordTarget) bool {
+	return siteID == target.SiteID || siteID == target.SiteCode
 }
 
 func validStatus(status string) bool {

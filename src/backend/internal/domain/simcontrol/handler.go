@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/auth"
 )
 
 // Handler serves browser-facing simulator control APIs.
@@ -31,7 +32,7 @@ func (h *Handler) RunOnce(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	status, err := h.service.RunOnce(r.Context(), request)
+	status, err := h.service.RunOnce(r.Context(), request, authorizationFromRequest(r))
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -45,7 +46,7 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	status, err := h.service.Start(request)
+	status, err := h.service.Start(request, authorizationFromRequest(r))
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -81,4 +82,12 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	default:
 		response.Error(w, r, http.StatusInternalServerError, 50002, "模拟器运行失败", message)
 	}
+}
+
+func authorizationFromRequest(r *http.Request) string {
+	token, ok := auth.TokenFromContext(r.Context())
+	if !ok {
+		return ""
+	}
+	return "Bearer " + token
 }

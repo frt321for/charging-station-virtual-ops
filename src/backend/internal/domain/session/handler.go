@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/auth"
 )
 
 // Handler serves charging session APIs.
@@ -22,6 +23,10 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	sessions, err := h.service.List(r.Context())
 	if err != nil {
+		if errors.Is(err, auth.ErrForbidden) {
+			response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
+			return
+		}
 		response.Error(w, r, http.StatusInternalServerError, 50002, "会话列表查询失败", "query failed")
 		return
 	}
@@ -119,6 +124,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		response.Error(w, r, http.StatusBadRequest, 30010, "会话状态不存在", "invalid session status")
 	case errors.Is(err, ErrInvalidTransition):
 		response.Error(w, r, http.StatusBadRequest, 30011, "会话状态流转不允许", "invalid session transition")
+	case errors.Is(err, auth.ErrForbidden):
+		response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
 	default:
 		response.Error(w, r, http.StatusInternalServerError, 50002, "会话处理失败", "session operation failed")
 	}

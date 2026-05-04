@@ -57,7 +57,7 @@ func (s *Service) Status() Status {
 }
 
 // RunOnce performs one virtual charger lifecycle run.
-func (s *Service) RunOnce(ctx context.Context, request Request) (Status, error) {
+func (s *Service) RunOnce(ctx context.Context, request Request, authorization string) (Status, error) {
 	normalized := normalizeRequest(request)
 	cfg := s.configFor(normalized, coresim.ModeOnce)
 	if err := cfg.Validate(); err != nil {
@@ -68,6 +68,7 @@ func (s *Service) RunOnce(ctx context.Context, request Request) (Status, error) 
 	if err != nil {
 		return Status{}, err
 	}
+	client.SetAuthorization(authorization)
 
 	started := time.Now().UTC()
 	s.mu.Lock()
@@ -97,7 +98,7 @@ func (s *Service) RunOnce(ctx context.Context, request Request) (Status, error) 
 }
 
 // Start begins a continuous heartbeat/fault simulator loop.
-func (s *Service) Start(request Request) (Status, error) {
+func (s *Service) Start(request Request, authorization string) (Status, error) {
 	normalized := normalizeRequest(request)
 	cfg := s.configFor(normalized, coresim.ModeRun)
 	if err := cfg.Validate(); err != nil {
@@ -108,6 +109,7 @@ func (s *Service) Start(request Request) (Status, error) {
 	if err != nil {
 		return Status{}, err
 	}
+	client.SetAuthorization(authorization)
 
 	s.mu.Lock()
 	if s.cancel != nil {

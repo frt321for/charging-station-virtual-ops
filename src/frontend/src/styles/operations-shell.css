@@ -1,5 +1,9 @@
 .ops-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100dvh;
   min-height: 100dvh;
+  overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.024) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
@@ -10,17 +14,46 @@
 
 .ops-topline {
   display: grid;
-  grid-template-columns: minmax(180px, auto) minmax(0, 1fr) auto;
+  grid-template-columns: 1fr;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--ops-line);
+  background: rgba(14, 18, 16, 0.985);
+  box-shadow: 0 16px 40px rgba(4, 7, 5, 0.36);
+}
+
+.ops-headbar {
+  display: grid;
+  grid-template-columns: minmax(240px, auto) minmax(0, 1fr);
   gap: 18px;
   align-items: center;
-  border-bottom: 1px solid var(--ops-line);
-  background: rgba(14, 18, 16, 0.96);
-  padding: 16px 22px;
+  min-height: 70px;
+  padding: 12px 22px;
 }
 
 .ops-brand {
   display: grid;
+  grid-template-columns: 42px minmax(0, auto);
   gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ops-brand::before {
+  content: "EV";
+  display: grid;
+  grid-row: span 2;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--ops-accent);
+  background: #24261d;
+  color: var(--ops-accent-strong);
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .ops-brand strong {
@@ -52,7 +85,10 @@
 .ops-nav {
   min-width: 0;
   overflow-x: auto;
-  padding-bottom: 2px;
+  border-top: 1px solid var(--ops-line);
+  background: #101510;
+  padding: 8px 22px;
+  scrollbar-width: thin;
 }
 
 .ops-nav button,
@@ -75,7 +111,10 @@
 }
 
 .ops-nav button {
+  display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   min-width: 82px;
   border-color: var(--ops-line);
   background: var(--ops-panel);
@@ -88,13 +127,9 @@
   color: var(--ops-ink);
 }
 
-.ops-nav code {
-  color: var(--ops-faint);
-  font-size: 11px;
-}
-
 .ops-tools {
   justify-content: flex-end;
+  align-items: center;
 }
 
 .ops-tools select,
@@ -114,6 +149,40 @@
   width: 180px;
 }
 
+.ops-user {
+  display: inline-grid;
+  grid-template-columns: auto auto auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid var(--ops-line);
+  background: #111713;
+  padding: 0 8px 0 12px;
+}
+
+.ops-user span {
+  color: var(--ops-ink);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.ops-user code {
+  color: var(--ops-muted);
+  font-size: 11px;
+}
+
+.ops-user button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid var(--ops-line-strong);
+  border-radius: 0;
+  background: var(--ops-panel);
+  color: var(--ops-muted);
+  padding: 0 10px;
+}
+
 .ops-primary-button,
 .ops-actions button:first-child,
 .ops-sim-actions button:first-child {
@@ -130,12 +199,38 @@
 }
 
 .ops-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(330px, 390px);
-  gap: 18px;
-  width: min(100%, 1580px);
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  width: min(100%, 1840px);
   margin: 0 auto;
-  padding: 18px;
+  padding: clamp(14px, 0.95vw, 18px);
+}
+
+.ops-view,
+.ops-workspace,
+.ops-workspace-main,
+.ops-workspace-aside {
+  min-width: 0;
+}
+
+.ops-view,
+.ops-workspace-main,
+.ops-workspace-aside {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.ops-workspace--split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  gap: 18px;
+  align-items: start;
+}
+
+.ops-workspace--reverse {
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
 }
 
 .ops-left,

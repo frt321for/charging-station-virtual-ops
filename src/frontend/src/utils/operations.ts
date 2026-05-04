@@ -135,7 +135,7 @@ export function currentLoadKw(snapshot?: OperationsSnapshot): number {
 }
 
 export function flattenChargers(snapshot?: OperationsSnapshot): ChargerNode[] {
-  if (!snapshot) return []
+  if (!snapshot?.topology) return []
   return snapshot.topology.areas.flatMap((area) =>
     area.groups.flatMap((group) => group.chargers),
   )
@@ -145,7 +145,7 @@ export function connectorStatusTone(status: string): 'ok' | 'charge' | 'warn' | 
   if (status === 'available') return 'ok'
   if (status === 'charging' || status === 'plugged') return 'charge'
   if (status === 'reserved') return 'warn'
-  if (status === 'faulted' || status === 'offline' || status === 'unavailable') return 'danger'
+  if (status === 'fault' || status === 'faulted' || status === 'offline' || status === 'unavailable') return 'danger'
   return 'idle'
 }
 

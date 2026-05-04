@@ -73,6 +73,24 @@ func (r *Repository) Get(ctx context.Context, sessionID string) (Detail, error) 
 	return Detail{Summary: summary, Events: events, MeterValues: meterValues}, nil
 }
 
+// GetBoundary returns the site boundary for one session.
+func (r *Repository) GetBoundary(ctx context.Context, sessionID string) (siteBoundary, error) {
+	var boundary siteBoundary
+	err := r.database.Pool().QueryRow(ctx, `
+		SELECT s.id::text, s.code
+		FROM charging_sessions cs
+		INNER JOIN sites s ON s.id = cs.site_id
+		WHERE cs.deleted_at IS NULL AND (cs.id::text = $1 OR cs.session_no = $1)
+	`, sessionID).Scan(&boundary.SiteID, &boundary.SiteCode)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return siteBoundary{}, ErrNotFound
+	}
+	if err != nil {
+		return siteBoundary{}, fmt.Errorf("query charging session boundary: %w", err)
+	}
+	return boundary, nil
+}
+
 // GetStatus returns the current lifecycle status for a session.
 func (r *Repository) GetStatus(ctx context.Context, sessionID string) (Status, error) {
 	var status Status
@@ -88,6 +106,28 @@ func (r *Repository) GetStatus(ctx context.Context, sessionID string) (Status, e
 		return "", fmt.Errorf("query charging session status: %w", err)
 	}
 	return status, nil
+}
+
+// GetConnectorBoundary returns the site boundary for one connector.
+func (r *Repository) GetConnectorBoundary(ctx context.Context, connectorCode string) (siteBoundary, error) {
+	var boundary siteBoundary
+	err := r.database.Pool().QueryRow(ctx, `
+		SELECT s.id::text, s.code
+		FROM connectors cn
+		INNER JOIN chargers c ON c.id = cn.charger_id
+		INNER JOIN charger_groups g ON g.id = c.group_id
+		INNER JOIN sites s ON s.id = g.site_id
+		WHERE cn.code = $1
+		  AND cn.deleted_at IS NULL
+		  AND c.deleted_at IS NULL
+	`, connectorCode).Scan(&boundary.SiteID, &boundary.SiteCode)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return siteBoundary{}, ErrNotFound
+	}
+	if err != nil {
+		return siteBoundary{}, fmt.Errorf("query connector boundary: %w", err)
+	}
+	return boundary, nil
 }
 
 // CreateReservation creates a waiting-arrival session and reserves a connector.

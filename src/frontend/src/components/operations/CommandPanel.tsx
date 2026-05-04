@@ -11,6 +11,7 @@ interface CommandPanelProps {
   isPending: boolean
   lastMessage?: string
   errorMessage?: string
+  canWrite: boolean
   onTargetPowerChange: (value: string) => void
   onCommand: (commandType: CommandPathType) => void
 }
@@ -32,6 +33,7 @@ export function CommandPanel({
   isPending,
   lastMessage,
   errorMessage,
+  canWrite,
   onTargetPowerChange,
   onCommand,
 }: CommandPanelProps) {
@@ -59,7 +61,7 @@ export function CommandPanel({
                 key={command.type}
                 type="button"
                 className={command.danger ? 'ops-danger-button' : undefined}
-                disabled={isPending || !canRunCommand(status, command.type)}
+                disabled={!canWrite || isPending || !canRunCommand(status, command.type)}
                 onClick={() => onCommand(command.type)}
               >
                 {command.type === 'start' ? <Send size={16} aria-hidden="true" /> : null}
@@ -84,7 +86,7 @@ export function CommandPanel({
             </label>
             <button
               type="button"
-              disabled={isPending || !canRunCommand(status, 'limit-power') || !isTargetPowerValid}
+              disabled={!canWrite || isPending || !canRunCommand(status, 'limit-power') || !isTargetPowerValid}
               onClick={() => onCommand('limit-power')}
             >
               应用

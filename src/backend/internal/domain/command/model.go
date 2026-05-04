@@ -73,6 +73,8 @@ type RemoteCommand struct {
 type CommandTarget struct {
 	SessionID     string
 	SessionNo     string
+	SiteID        string
+	SiteCode      string
 	SessionStatus string
 	ChargerID     string
 	ChargerCode   string

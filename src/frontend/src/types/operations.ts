@@ -4,6 +4,7 @@ export type ChargerStatus =
   | 'available'
   | 'occupied'
   | 'charging'
+  | 'fault'
   | 'faulted'
   | 'offline'
   | 'maintenance'
@@ -14,6 +15,7 @@ export type ConnectorStatus =
   | 'reserved'
   | 'plugged'
   | 'charging'
+  | 'fault'
   | 'faulted'
   | 'offline'
   | 'unavailable'
@@ -295,6 +297,141 @@ export interface LoadPolicy {
   status: 'draft' | 'active' | 'retired'
 }
 
+export interface ConfigSite {
+  id: string
+  code: string
+  name: string
+  campus: string
+  capacityKw: number
+  loadLimitKw: number
+  timezone: string
+  slaResponseMinutes: number
+  slaRecoveryMinutes: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface ConfigArea {
+  id: string
+  siteId: string
+  code: string
+  name: string
+  loadLimitKw: number
+  sortOrder: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface ConfigGroup {
+  id: string
+  siteId: string
+  areaId: string
+  code: string
+  name: string
+  electricalNode: string
+  loadLimitKw: number
+  priority: number
+  status: 'active' | 'inactive'
+  updatedAt: string
+}
+
+export interface ConfigCharger {
+  id: string
+  groupId: string
+  groupCode: string
+  code: string
+  name: string
+  chargerType: 'ac' | 'dc' | string
+  ratedPowerKw: number
+  connectorCount: number
+  status: ChargerStatus | 'unregistered'
+  installationLocation: string
+  maintenanceTag: string
+  updatedAt: string
+}
+
+export interface ConfigConnector {
+  id: string
+  chargerId: string
+  chargerCode: string
+  code: string
+  number: number
+  maxPowerKw: number
+  status: ConnectorStatus | 'maintenance' | 'disabled'
+  updatedAt: string
+}
+
+export interface ReservationRule {
+  id: string
+  siteId: string
+  siteCode: string
+  code: string
+  name: string
+  holdMinutes: number
+  timeoutAction: 'release' | 'promote_queue' | 'cancel'
+  version: number
+  status: 'draft' | 'active' | 'retired'
+  updatedAt: string
+}
+
+export interface QueueRule {
+  id: string
+  siteId: string
+  siteCode: string
+  code: string
+  name: string
+  strategy: 'reservation_time' | 'member_priority' | 'load_priority'
+  maxQueueSize: number
+  priorityFactor: string
+  version: number
+  status: 'draft' | 'active' | 'retired'
+  updatedAt: string
+}
+
+export interface ConfigSnapshot {
+  site: ConfigSite
+  areas: ConfigArea[]
+  groups: ConfigGroup[]
+  chargers: ConfigCharger[]
+  connectors: ConfigConnector[]
+  pricingPolicies: PricingPolicy[]
+  loadPolicies: LoadPolicy[]
+  reservationRules: ReservationRule[]
+  queueRules: QueueRule[]
+}
+
+export type ConfigEntity =
+  | 'site'
+  | 'area'
+  | 'group'
+  | 'charger'
+  | 'connector'
+  | 'loadPolicy'
+  | 'reservationRule'
+  | 'queueRule'
+
+export interface ConfigUpdateRequest {
+  entity: ConfigEntity
+  id: string
+  body: Record<string, string | number | undefined>
+}
+
+export interface CreatePricingPolicyRequest {
+  siteId: string
+  code: string
+  name: string
+  chargerType: string
+  status: PricingPolicy['status']
+  periods: Array<{
+    label: string
+    startMinute: number
+    endMinute: number
+    energyPricePerKwh: number
+    serviceFeePerKwh: number
+    occupancyFeePerMinute: number
+  }>
+}
+
 export interface QueueItem {
   position: number
   sessionId: string
@@ -440,6 +577,50 @@ export interface MaintenanceSnapshot {
   sla: SLASummary
 }
 
+export type AIInsightKind =
+  | 'session_explanation'
+  | 'work_order_summary'
+  | 'congestion_risk'
+  | 'daily_report'
+  | 'station_qa'
+
+export interface AIInsightEvidence {
+  label: string
+  value: string
+}
+
+export interface AIInsightSite {
+  id: string
+  code: string
+  name: string
+}
+
+export interface AIInsightTarget {
+  type: string
+  id: string
+  code: string
+}
+
+export interface AIInsight {
+  requestId: string
+  kind: AIInsightKind
+  site: AIInsightSite
+  target: AIInsightTarget
+  content: string
+  suggestions: string[]
+  evidence: AIInsightEvidence[]
+  provider: string
+  model: string
+  generatedAt: string
+}
+
+export type AIInsightRequest =
+  | { kind: 'session_explanation'; sessionId: string }
+  | { kind: 'work_order_summary'; workOrderId: string }
+  | { kind: 'congestion_risk'; siteId: string; horizonHours: number }
+  | { kind: 'daily_report'; siteId: string; businessDate: string }
+  | { kind: 'station_qa'; siteId: string; question: string }
+
 export interface CreateWorkOrderRequest {
   assigneeName: string
   impactScope: string
@@ -518,12 +699,19 @@ export interface SimulatorStatus {
 export interface OperationsSnapshot {
   sites: SiteSummary[]
   site: SiteSummary
-  topology: SiteTopology
+  topology?: SiteTopology
   sessions: SessionSummary[]
   sessionDetails: SessionDetail[]
   pricingPolicies: PricingPolicy[]
   billingDrafts: BillingDraft[]
   reconciliationExceptions: ReconciliationException[]
-  loadControl: LoadControlSnapshot
-  maintenance: MaintenanceSnapshot
+  loadControl?: LoadControlSnapshot
+  maintenance?: MaintenanceSnapshot
+}
+
+export interface OperationsSnapshotAccess {
+  canReadBilling: boolean
+  canReadLoadControl: boolean
+  canReadMaintenance: boolean
+  canReadSessions: boolean
 }

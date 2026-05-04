@@ -28,6 +28,8 @@ interface MaintenancePanelProps {
   isTransitionPending: boolean
   lastWorkOrder?: WorkOrder
   errorMessage?: string
+  canWrite: boolean
+  actorName: string
   onSelectWorkOrder: (workOrderId: string) => void
   onCreateWorkOrder: (faultId: string, request: CreateWorkOrderRequest) => void
   onTransitionWorkOrder: (workOrderId: string, request: TransitionWorkOrderRequest) => void
@@ -53,6 +55,8 @@ export function MaintenancePanel({
   isTransitionPending,
   lastWorkOrder,
   errorMessage,
+  canWrite,
+  actorName,
   onSelectWorkOrder,
   onCreateWorkOrder,
   onTransitionWorkOrder,
@@ -82,22 +86,22 @@ export function MaintenancePanel({
     : availableTargets[0] ?? targetStatus
 
   function submitWorkOrder() {
-    if (!selectedFault || assigneeName.trim() === '') return
+    if (!canWrite || !selectedFault || assigneeName.trim() === '') return
     onCreateWorkOrder(selectedFault.id, {
       assigneeName,
       impactScope,
       title: title.trim() || `${selectedFault.chargerCode} / ${selectedFault.faultCode}`,
       description: description.trim() || selectedFault.faultCode,
-      actorName: 'maintenance',
+      actorName,
     })
   }
 
   function submitTransition() {
-    if (!selectedWorkOrder || !availableTargets.includes(targetStatusValue)) return
+    if (!canWrite || !selectedWorkOrder || !availableTargets.includes(targetStatusValue)) return
     onTransitionWorkOrder(selectedWorkOrder.id, {
       targetStatus: targetStatusValue,
       assigneeName,
-      actorName: 'maintenance',
+      actorName,
       note: transitionNote,
       payload: { source: 'operations-console' },
     })
@@ -138,6 +142,7 @@ export function MaintenancePanel({
             <select
               aria-label="故障对象"
               name="faultId"
+              disabled={!canWrite}
               value={faultSelectValue}
               onChange={(event) => setSelectedFaultId(event.target.value)}
             >
@@ -153,6 +158,7 @@ export function MaintenancePanel({
             <input
               aria-label="维保班组"
               name="maintenanceAssignee"
+              disabled={!canWrite}
               value={assigneeName}
               onChange={(event) => setAssigneeName(event.target.value)}
             />
@@ -162,6 +168,7 @@ export function MaintenancePanel({
             <select
               aria-label="影响范围"
               name="impactScope"
+              disabled={!canWrite}
               value={impactScope}
               onChange={(event) => setImpactScope(event.target.value)}
             >
@@ -178,6 +185,7 @@ export function MaintenancePanel({
               aria-label="工单标题"
               name="workOrderTitle"
               placeholder={selectedFault ? `${selectedFault.chargerCode} / ${selectedFault.faultCode}` : ''}
+              disabled={!canWrite}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />
@@ -188,12 +196,13 @@ export function MaintenancePanel({
               aria-label="工单记录"
               name="workOrderDescription"
               placeholder={selectedFault?.faultCode ?? ''}
+              disabled={!canWrite}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
           </label>
         </div>
-        <button type="button" className="ops-wide-button" disabled={!selectedFault || isCreatePending} onClick={submitWorkOrder}>
+        <button type="button" className="ops-wide-button" disabled={!canWrite || !selectedFault || isCreatePending} onClick={submitWorkOrder}>
           <Wrench size={16} aria-hidden="true" />
           {selectedFault?.status === 'open' ? '派单' : '关联工单'}
         </button>
@@ -243,6 +252,7 @@ export function MaintenancePanel({
             <select
               aria-label="工单目标状态"
               name="workOrderTargetStatus"
+              disabled={!canWrite}
               value={targetStatusValue}
               onChange={(event) => setTargetStatus(event.target.value as WorkOrderStatus)}
             >
@@ -258,13 +268,14 @@ export function MaintenancePanel({
             <input
               aria-label="工单处理记录"
               name="workOrderTransitionNote"
+              disabled={!canWrite}
               value={transitionNote}
               onChange={(event) => setTransitionNote(event.target.value)}
             />
           </label>
           <button
             type="button"
-            disabled={!selectedWorkOrder || availableTargets.length === 0 || isTransitionPending}
+            disabled={!canWrite || !selectedWorkOrder || availableTargets.length === 0 || isTransitionPending}
             onClick={submitTransition}
           >
             <ArrowRight size={16} aria-hidden="true" />

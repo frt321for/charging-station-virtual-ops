@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/auth"
 )
 
 // Handler serves maintenance and SLA APIs.
@@ -112,6 +113,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		response.Error(w, r, http.StatusNotFound, 30001, "维保对象不存在", "maintenance object not found")
 	case errors.Is(err, ErrInvalidWorkOrder):
 		response.Error(w, r, http.StatusBadRequest, 30040, "工单流转不合法", "invalid work-order request")
+	case errors.Is(err, auth.ErrForbidden):
+		response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
 	default:
 		response.Error(w, r, http.StatusInternalServerError, 50002, "维保处理失败", "maintenance operation failed")
 	}

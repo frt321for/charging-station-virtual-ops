@@ -6,6 +6,8 @@ import (
 	"math"
 	"strings"
 	"time"
+
+	"charging-ops/backend/internal/domain/auth"
 )
 
 type repository interface {
@@ -29,17 +31,49 @@ func NewService(repository repository) *Service {
 
 // ListPolicies returns versioned pricing policies for a site.
 func (s *Service) ListPolicies(ctx context.Context, siteID string) ([]PricingPolicy, error) {
-	return s.repository.ListPolicies(ctx, strings.TrimSpace(siteID))
+	siteID = strings.TrimSpace(siteID)
+	if !canQuerySite(ctx, siteID) {
+		return nil, auth.ErrForbidden
+	}
+	policies, err := s.repository.ListPolicies(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+	filtered := policies[:0]
+	for _, policy := range policies {
+		if auth.CanAccessSite(ctx, policy.SiteID, policy.SiteCode) {
+			filtered = append(filtered, policy)
+		}
+	}
+	return filtered, nil
 }
 
 // ListDrafts returns recent billing drafts.
 func (s *Service) ListDrafts(ctx context.Context, siteID string) ([]BillingDraft, error) {
-	return s.repository.ListDrafts(ctx, strings.TrimSpace(siteID))
+	siteID = strings.TrimSpace(siteID)
+	if !canQuerySite(ctx, siteID) {
+		return nil, auth.ErrForbidden
+	}
+	drafts, err := s.repository.ListDrafts(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+	filtered := drafts[:0]
+	for _, draft := range drafts {
+		if auth.CanAccessSite(ctx, draft.SiteID, draft.SiteCode) {
+			filtered = append(filtered, draft)
+		}
+	}
+	return filtered, nil
 }
 
 // ListExceptions returns open reconciliation exceptions.
 func (s *Service) ListExceptions(ctx context.Context, siteID string) ([]ReconciliationException, error) {
-	return s.repository.ListExceptions(ctx, strings.TrimSpace(siteID))
+	siteID = strings.TrimSpace(siteID)
+	if !canQuerySite(ctx, siteID) {
+		return nil, auth.ErrForbidden
+	}
+	return s.repository.ListExceptions(ctx, siteID)
 }
 
 // GenerateDraft calculates and persists a billing draft for a session.
@@ -52,6 +86,9 @@ func (s *Service) GenerateDraft(ctx context.Context, params GenerateDraftParams)
 	session, err := s.repository.FindSessionForDraft(ctx, sessionID)
 	if err != nil {
 		return BillingDraft{}, err
+	}
+	if !auth.CanAccessSite(ctx, session.SiteID, session.SiteCode) {
+		return BillingDraft{}, auth.ErrForbidden
 	}
 	if session.Status != "pending_billing" && session.Status != "pending_review" && session.Status != "billed" {
 		return BillingDraft{}, fmt.Errorf("%w: session is not stopped", ErrInvalidDraft)
@@ -68,6 +105,14 @@ func (s *Service) GenerateDraft(ctx context.Context, params GenerateDraftParams)
 		generatedBy = "billing-engine"
 	}
 	return s.repository.SaveDraft(ctx, calculation, generatedBy)
+}
+
+func canQuerySite(ctx context.Context, siteID string) bool {
+	principal, ok := auth.PrincipalFromContext(ctx)
+	if !ok || principal.HasAnySiteAccess() {
+		return true
+	}
+	return siteID != "" && principal.CanAccessSite(siteID, siteID)
 }
 
 func calculateDraft(session sessionForDraft, policy PricingPolicy) draftCalculation {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"charging-ops/backend/internal/domain/auth"
 	"charging-ops/backend/internal/domain/session"
 )
 
@@ -35,6 +36,9 @@ func (s *Service) Create(ctx context.Context, request CreateRequest) (RemoteComm
 	target, err := s.repository.FindTarget(ctx, request.SessionID)
 	if err != nil {
 		return RemoteCommand{}, err
+	}
+	if !auth.CanAccessSite(ctx, target.SiteID, target.SiteCode) {
+		return RemoteCommand{}, auth.ErrForbidden
 	}
 	if target.ChargerStatus == "offline" || target.ChargerStatus == "disabled" {
 		return RemoteCommand{}, ErrChargerOffline

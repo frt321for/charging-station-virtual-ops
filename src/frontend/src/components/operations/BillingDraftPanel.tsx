@@ -18,6 +18,7 @@ interface BillingDraftPanelProps {
   isPending: boolean
   lastDraft?: BillingDraft
   errorMessage?: string
+  canGenerate: boolean
   onGenerate: (sessionNo: string) => void
 }
 
@@ -28,6 +29,7 @@ export function BillingDraftPanel({
   isPending,
   lastDraft,
   errorMessage,
+  canGenerate,
   onGenerate,
 }: BillingDraftPanelProps) {
   const [selectedSessionNo, setSelectedSessionNo] = useState('')
@@ -75,7 +77,7 @@ export function BillingDraftPanel({
           </label>
           <button
             type="button"
-            disabled={isPending || !selectedSession || selectedSessionHasDraft}
+            disabled={!canGenerate || isPending || !selectedSession || selectedSessionHasDraft}
             onClick={() => selectedSession && onGenerate(selectedSession.sessionNo)}
           >
             <ReceiptText size={16} aria-hidden="true" />

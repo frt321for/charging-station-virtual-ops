@@ -46,6 +46,44 @@ func (r *Repository) Snapshot(ctx context.Context, siteID string) (Snapshot, err
 	return Snapshot{Faults: faults, WorkOrders: workOrders, SLA: sla}, nil
 }
 
+// FindFaultBoundary returns the site boundary for one fault.
+func (r *Repository) FindFaultBoundary(ctx context.Context, faultID string) (siteBoundary, error) {
+	var boundary siteBoundary
+	err := r.database.Pool().QueryRow(ctx, `
+		SELECT s.id::text, s.code
+		FROM charger_faults cf
+		INNER JOIN chargers c ON c.id = cf.charger_id
+		INNER JOIN charger_groups g ON g.id = c.group_id
+		INNER JOIN sites s ON s.id = g.site_id
+		WHERE cf.deleted_at IS NULL AND (cf.id::text = $1 OR cf.fault_no = $1)
+	`, faultID).Scan(&boundary.SiteID, &boundary.SiteCode)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return siteBoundary{}, ErrNotFound
+	}
+	if err != nil {
+		return siteBoundary{}, fmt.Errorf("query fault boundary: %w", err)
+	}
+	return boundary, nil
+}
+
+// FindWorkOrderBoundary returns the site boundary for one work order.
+func (r *Repository) FindWorkOrderBoundary(ctx context.Context, workOrderID string) (siteBoundary, error) {
+	var boundary siteBoundary
+	err := r.database.Pool().QueryRow(ctx, `
+		SELECT s.id::text, s.code
+		FROM work_orders wo
+		INNER JOIN sites s ON s.id = wo.site_id
+		WHERE wo.deleted_at IS NULL AND (wo.id::text = $1 OR wo.work_order_no = $1)
+	`, workOrderID).Scan(&boundary.SiteID, &boundary.SiteCode)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return siteBoundary{}, ErrNotFound
+	}
+	if err != nil {
+		return siteBoundary{}, fmt.Errorf("query work-order boundary: %w", err)
+	}
+	return boundary, nil
+}
+
 // ListFaults returns recent open and linked faults.
 func (r *Repository) ListFaults(ctx context.Context, siteID string) ([]Fault, error) {
 	rows, err := r.database.Pool().Query(ctx, faultSQL+`

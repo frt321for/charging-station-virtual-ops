@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/auth"
 )
 
 // Handler serves load-control APIs.
@@ -74,6 +75,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		response.Error(w, r, http.StatusNotFound, 30001, "负载控制对象不存在", "load-control object not found")
 	case errors.Is(err, ErrInvalidRecord):
 		response.Error(w, r, http.StatusBadRequest, 30030, "负载控制记录不合法", "invalid load-control record")
+	case errors.Is(err, auth.ErrForbidden):
+		response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
 	default:
 		response.Error(w, r, http.StatusInternalServerError, 50002, "负载控制处理失败", "load-control operation failed")
 	}

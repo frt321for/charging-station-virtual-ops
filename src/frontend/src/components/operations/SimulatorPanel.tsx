@@ -4,7 +4,11 @@ import { ApiError } from '../../services/api-client'
 import type { SimulatorRequest } from '../../types/operations'
 import { StatusBadge } from './StatusBadge'
 
-export function SimulatorPanel() {
+interface SimulatorPanelProps {
+  enabled: boolean
+}
+
+export function SimulatorPanel({ enabled }: SimulatorPanelProps) {
   const [form, setForm] = useState({
     chargers: '5',
     connectors: '1',
@@ -30,11 +34,11 @@ export function SimulatorPanel() {
     : undefined
 
   function runOnce() {
-    if (request) onceMutation.mutate(request)
+    if (enabled && request) onceMutation.mutate(request)
   }
 
   function startLoop() {
-    if (request) startMutation.mutate(request)
+    if (enabled && request) startMutation.mutate(request)
   }
 
   return (
@@ -99,16 +103,16 @@ export function SimulatorPanel() {
         </label>
       </div>
       <div className="ops-sim-actions">
-        <button type="button" className="ops-primary-button" disabled={!isValid || isPending} onClick={runOnce}>
+        <button type="button" className="ops-primary-button" disabled={!enabled || !isValid || isPending} onClick={runOnce}>
           运行一次
         </button>
-        <button type="button" disabled={!isValid || isPending || status?.running} onClick={startLoop}>
+        <button type="button" disabled={!enabled || !isValid || isPending || status?.running} onClick={startLoop}>
           持续运行
         </button>
         <button
           type="button"
           className="ops-danger-button"
-          disabled={isPending || !status?.running}
+          disabled={!enabled || isPending || !status?.running}
           onClick={() => stopMutation.mutate()}
         >
           停止

@@ -28,8 +28,9 @@ func (e APIError) Error() string {
 
 // Client calls the charging operations backend API.
 type Client struct {
-	baseURL    *url.URL
-	httpClient *http.Client
+	baseURL       *url.URL
+	httpClient    *http.Client
+	authorization string
 }
 
 // NewClient creates an API client.
@@ -47,6 +48,11 @@ func NewClient(apiBase string, timeout time.Duration) (*Client, error) {
 			Timeout: timeout,
 		},
 	}, nil
+}
+
+// SetAuthorization forwards an already authenticated browser request to protected API calls.
+func (c *Client) SetAuthorization(authorization string) {
+	c.authorization = strings.TrimSpace(authorization)
 }
 
 func (c *Client) Register(ctx context.Context, req registerRequest) error {
@@ -109,6 +115,9 @@ func (c *Client) do(ctx context.Context, method string, path string, body any, o
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-Trace-Id", "sim-"+time.Now().UTC().Format("20060102150405.000000000"))
+	if c.authorization != "" {
+		req.Header.Set("Authorization", c.authorization)
+	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

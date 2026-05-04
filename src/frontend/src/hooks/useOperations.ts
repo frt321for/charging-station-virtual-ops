@@ -3,11 +3,14 @@ import {
   confirmBillingDraft,
   createBillingCorrection,
   createLoadControlRecord,
+  createPricingPolicy,
   createRemoteCommand,
   createReservation,
   createWorkOrder,
   exportReconciliation,
+  generateAIInsight,
   generateBillingDraft,
+  getConfigSnapshot,
   getOperationsSnapshot,
   getSessionDetail,
   getSimulatorStatus,
@@ -17,23 +20,28 @@ import {
   startSimulator,
   stopSimulator,
   transitionWorkOrder,
+  updateConfig,
 } from '../services/operations-api'
 import type {
   CommandPathType,
+  AIInsightRequest,
   ConfirmBillRequest,
+  ConfigUpdateRequest,
   CreateCorrectionRequest,
   CreateLoadControlRecordRequest,
+  CreatePricingPolicyRequest,
   CreateWorkOrderRequest,
   CreateReservationRequest,
+  OperationsSnapshotAccess,
   ReviewExceptionRequest,
   SimulatorRequest,
   TransitionWorkOrderRequest,
 } from '../types/operations'
 
-export function useOperationsSnapshot(siteCode?: string) {
+export function useOperationsSnapshot(siteCode: string | undefined, access: OperationsSnapshotAccess) {
   return useQuery({
-    queryKey: ['operations', 'snapshot', siteCode],
-    queryFn: () => getOperationsSnapshot(siteCode),
+    queryKey: ['operations', 'snapshot', siteCode, access],
+    queryFn: () => getOperationsSnapshot(siteCode, access),
     refetchInterval: 15_000,
   })
 }
@@ -53,6 +61,42 @@ export function useWorkOrderEvents(workOrderId?: string) {
     queryFn: () => listWorkOrderEvents(workOrderId ?? ''),
     enabled: Boolean(workOrderId),
     refetchInterval: 10_000,
+  })
+}
+
+export function useConfigSnapshot(siteId?: string, enabled = true) {
+  return useQuery({
+    queryKey: ['operations', 'config', siteId],
+    queryFn: () => getConfigSnapshot(siteId ?? ''),
+    enabled: Boolean(siteId) && enabled,
+  })
+}
+
+export function useUpdateConfig() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: ConfigUpdateRequest) => updateConfig(request),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['operations', 'config'] }),
+        queryClient.invalidateQueries({ queryKey: ['operations', 'snapshot'] }),
+      ])
+    },
+  })
+}
+
+export function useCreatePricingPolicy() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: CreatePricingPolicyRequest) => createPricingPolicy(request),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['operations', 'config'] }),
+        queryClient.invalidateQueries({ queryKey: ['operations', 'snapshot'] }),
+      ])
+    },
   })
 }
 
@@ -181,6 +225,12 @@ export function useExportReconciliation() {
   return useMutation({
     mutationFn: (request: { siteId: string; generatedBy: string }) =>
       exportReconciliation(request.siteId, request.generatedBy),
+  })
+}
+
+export function useAIAssistant() {
+  return useMutation({
+    mutationFn: (request: AIInsightRequest) => generateAIInsight(request),
   })
 }
 

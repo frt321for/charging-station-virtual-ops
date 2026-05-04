@@ -30,6 +30,8 @@ interface ReconciliationPanelProps {
   lastCorrection?: BillingCorrection
   lastExport?: ReconciliationExport
   errorMessage?: string
+  canReview: boolean
+  reviewerName: string
   onReview: (exceptionId: string, request: ReviewExceptionRequest) => void
   onCreateCorrection: (exceptionId: string, request: CreateCorrectionRequest) => void
   onConfirmBill: (billId: string, request: ConfirmBillRequest) => void
@@ -56,6 +58,8 @@ export function ReconciliationPanel({
   lastCorrection,
   lastExport,
   errorMessage,
+  canReview,
+  reviewerName,
   onReview,
   onCreateCorrection,
   onConfirmBill,
@@ -63,7 +67,6 @@ export function ReconciliationPanel({
 }: ReconciliationPanelProps) {
   const [selectedExceptionId, setSelectedExceptionId] = useState('')
   const [reviewStatus, setReviewStatus] = useState<ReconciliationException['status']>('reviewing')
-  const [reviewerName, setReviewerName] = useState('finance-reviewer')
   const [note, setNote] = useState('账单复核')
   const [correctedEnergyKwh, setCorrectedEnergyKwh] = useState('')
   const [correctedDurationMinutes, setCorrectedDurationMinutes] = useState('')
@@ -87,7 +90,7 @@ export function ReconciliationPanel({
     [energyValue, durationValue, amountValue].some((value) => value !== undefined)
 
   function submitReview() {
-    if (!selectedException) return
+    if (!canReview || !selectedException) return
     onReview(selectedException.id, {
       status: reviewStatus,
       reviewerName,
@@ -96,7 +99,7 @@ export function ReconciliationPanel({
   }
 
   function submitCorrection() {
-    if (!selectedException || !canCorrect) return
+    if (!canReview || !selectedException || !canCorrect) return
     onCreateCorrection(selectedException.id, {
       correctedEnergyKwh: energyValue,
       correctedDurationMinutes: durationValue,
@@ -119,6 +122,7 @@ export function ReconciliationPanel({
             <select
               aria-label="核查异常"
               name="reconciliationException"
+              disabled={!canReview}
               value={selectedException?.id ?? ''}
               onChange={(event) => setSelectedExceptionId(event.target.value)}
             >
@@ -134,6 +138,7 @@ export function ReconciliationPanel({
             <select
               aria-label="核查状态"
               name="reconciliationStatus"
+              disabled={!canReview}
               value={reviewStatus}
               onChange={(event) => setReviewStatus(event.target.value as ReconciliationException['status'])}
             >
@@ -145,24 +150,16 @@ export function ReconciliationPanel({
             </select>
           </label>
           <label>
-            复核人
-            <input
-              aria-label="复核人"
-              name="financeReviewer"
-              value={reviewerName}
-              onChange={(event) => setReviewerName(event.target.value)}
-            />
-          </label>
-          <label>
             备注
             <input
               aria-label="核查备注"
               name="financeReviewNote"
+              disabled={!canReview}
               value={note}
               onChange={(event) => setNote(event.target.value)}
             />
           </label>
-          <button type="button" disabled={!selectedException || isReviewPending} onClick={submitReview}>
+          <button type="button" disabled={!canReview || !selectedException || isReviewPending} onClick={submitReview}>
             <FilePenLine size={16} aria-hidden="true" />
             复核
           </button>
@@ -175,6 +172,7 @@ export function ReconciliationPanel({
               aria-label="修正电量"
               inputMode="decimal"
               name="correctedEnergyKwh"
+              disabled={!canReview}
               value={correctedEnergyKwh}
               onChange={(event) => setCorrectedEnergyKwh(event.target.value)}
             />
@@ -185,6 +183,7 @@ export function ReconciliationPanel({
               aria-label="修正时长"
               inputMode="numeric"
               name="correctedDurationMinutes"
+              disabled={!canReview}
               value={correctedDurationMinutes}
               onChange={(event) => setCorrectedDurationMinutes(event.target.value)}
             />
@@ -195,6 +194,7 @@ export function ReconciliationPanel({
               aria-label="修正金额"
               inputMode="decimal"
               name="correctedTotalAmount"
+              disabled={!canReview}
               value={correctedTotalAmount}
               onChange={(event) => setCorrectedTotalAmount(event.target.value)}
             />
@@ -204,11 +204,12 @@ export function ReconciliationPanel({
             <input
               aria-label="修正原因"
               name="correctionReason"
+              disabled={!canReview}
               value={correctionReason}
               onChange={(event) => setCorrectionReason(event.target.value)}
             />
           </label>
-          <button type="button" disabled={!canCorrect || isCorrectionPending} onClick={submitCorrection}>
+          <button type="button" disabled={!canReview || !canCorrect || isCorrectionPending} onClick={submitCorrection}>
             <CheckCircle2 size={16} aria-hidden="true" />
             修正
           </button>
@@ -220,6 +221,7 @@ export function ReconciliationPanel({
             <select
               aria-label="确认账单"
               name="confirmBill"
+              disabled={!canReview}
               value={confirmableDraft?.id ?? ''}
               onChange={(event) => setSelectedBillId(event.target.value)}
             >
@@ -232,13 +234,13 @@ export function ReconciliationPanel({
           </label>
           <button
             type="button"
-            disabled={!confirmableDraft || isConfirmPending || confirmableDraft.status === 'confirmed'}
+            disabled={!canReview || !confirmableDraft || isConfirmPending || confirmableDraft.status === 'confirmed'}
             onClick={() => confirmableDraft && onConfirmBill(confirmableDraft.id, { reviewerName, note })}
           >
             <CheckCircle2 size={16} aria-hidden="true" />
             确认
           </button>
-          <button type="button" disabled={!siteCode || isExportPending} onClick={() => siteCode && onExport(siteCode)}>
+          <button type="button" disabled={!canReview || !siteCode || isExportPending} onClick={() => siteCode && onExport(siteCode)}>
             <Download size={16} aria-hidden="true" />
             导出
           </button>

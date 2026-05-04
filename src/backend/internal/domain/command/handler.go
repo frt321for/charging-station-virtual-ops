@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/auth"
 )
 
 // Handler serves remote command APIs.
@@ -99,6 +100,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		response.Error(w, r, http.StatusBadRequest, 10002, "命令参数不合法", "invalid command request")
 	case errors.Is(err, ErrInvalidTransition):
 		response.Error(w, r, http.StatusBadRequest, 30011, "会话状态流转不允许", "invalid command transition")
+	case errors.Is(err, auth.ErrForbidden):
+		response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
 	default:
 		response.Error(w, r, http.StatusInternalServerError, 50002, "命令处理失败", "command operation failed")
 	}

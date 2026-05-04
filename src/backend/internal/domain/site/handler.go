@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"charging-ops/backend/internal/common/response"
+	"charging-ops/backend/internal/domain/auth"
 )
 
 // Handler serves site operations APIs.
@@ -21,6 +22,10 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	sites, err := h.service.ListSummaries(r.Context())
 	if err != nil {
+		if errors.Is(err, auth.ErrForbidden) {
+			response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
+			return
+		}
 		response.Error(w, r, http.StatusInternalServerError, 50002, "站点列表查询失败", "query failed")
 		return
 	}
@@ -37,6 +42,10 @@ func (h *Handler) Topology(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			response.Error(w, r, http.StatusNotFound, 30001, "站点不存在", "site not found")
+			return
+		}
+		if errors.Is(err, auth.ErrForbidden) {
+			response.Error(w, r, http.StatusForbidden, 20002, "权限不足", "permission denied")
 			return
 		}
 		response.Error(w, r, http.StatusInternalServerError, 50002, "站点拓扑查询失败", "query failed")

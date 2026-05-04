@@ -32,6 +32,8 @@ func (r *Repository) FindTarget(ctx context.Context, sessionID string) (CommandT
 		SELECT
 			cs.id::text,
 			cs.session_no,
+			cs.site_id::text,
+			s.code,
 			cs.status,
 			c.id::text,
 			c.code,
@@ -41,10 +43,13 @@ func (r *Repository) FindTarget(ctx context.Context, sessionID string) (CommandT
 		FROM charging_sessions cs
 		INNER JOIN chargers c ON c.id = cs.charger_id
 		INNER JOIN connectors cn ON cn.id = cs.connector_id
+		INNER JOIN sites s ON s.id = cs.site_id
 		WHERE cs.deleted_at IS NULL AND (cs.id::text = $1 OR cs.session_no = $1)
 	`, sessionID).Scan(
 		&target.SessionID,
 		&target.SessionNo,
+		&target.SiteID,
+		&target.SiteCode,
 		&target.SessionStatus,
 		&target.ChargerID,
 		&target.ChargerCode,

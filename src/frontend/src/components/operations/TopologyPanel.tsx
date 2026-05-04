@@ -13,6 +13,7 @@ const connectorLabels: Record<string, string> = {
   reserved: '预约',
   plugged: '已插枪',
   charging: '充电中',
+  fault: '故障',
   faulted: '故障',
   offline: '离线',
   unavailable: '不可用',
@@ -23,7 +24,7 @@ export function TopologyPanel({ snapshot, selectedConnectorCode, onSelectConnect
   const selected = findConnectorByCode(chargers, selectedConnectorCode)
   const primaryCharger =
     selected?.charger ?? chargers.find((charger) => charger.connectors.some((item) => item.status === 'charging')) ?? chargers[0]
-  const otherAreas = snapshot?.topology.areas.filter((area) =>
+  const otherAreas = snapshot?.topology?.areas.filter((area) =>
     area.groups.every((group) => !group.chargers.some((charger) => charger.id === primaryCharger?.id)),
   )
 

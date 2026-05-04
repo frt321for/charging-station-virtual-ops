@@ -12,6 +12,7 @@ interface SessionTableProps {
   sessions: SessionSummary[]
   details: SessionDetail[]
   selectedSessionNo?: string
+  canStopSessions: boolean
   onSelectSession: (sessionNo: string) => void
   onStopSession: (sessionNo: string) => void
 }
@@ -20,6 +21,7 @@ export function SessionTable({
   sessions,
   details,
   selectedSessionNo,
+  canStopSessions,
   onSelectSession,
   onStopSession,
 }: SessionTableProps) {
@@ -47,7 +49,7 @@ export function SessionTable({
             {sessions.slice(0, 8).map((session) => {
               const detail = detailBySessionNo.get(session.sessionNo)
               const isSelected = selectedSessionNo === session.sessionNo
-              const canStop = session.status === 'charging' || session.status === 'paused'
+              const canStop = canStopSessions && (session.status === 'charging' || session.status === 'paused')
 
               return (
                 <tr key={session.id} className={isSelected ? 'ops-row-selected' : undefined}>

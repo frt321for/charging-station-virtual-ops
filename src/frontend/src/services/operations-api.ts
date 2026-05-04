@@ -1,17 +1,23 @@
 import type {
   BillingDraft,
   BillingCorrection,
+  AIInsight,
+  AIInsightRequest,
   CommandPathType,
   CreateCommandRequest,
+  CreatePricingPolicyRequest,
   CreateCorrectionRequest,
   CreateLoadControlRecordRequest,
   CreateWorkOrderRequest,
   ConfirmBillRequest,
   CreateReservationRequest,
+  ConfigSnapshot,
+  ConfigUpdateRequest,
   GenerateBillingDraftRequest,
   LoadControlRecord,
   LoadControlSnapshot,
   MaintenanceSnapshot,
+  OperationsSnapshotAccess,
   OperationsSnapshot,
   PricingPolicy,
   ReconciliationException,
@@ -238,8 +244,63 @@ export async function stopSimulator(): Promise<SimulatorStatus> {
   })
 }
 
-export async function getOperationsSnapshot(siteCode?: string): Promise<OperationsSnapshot> {
-  const [sites, allSessions] = await Promise.all([listSites(), listSessions()])
+export async function getConfigSnapshot(siteId: string): Promise<ConfigSnapshot> {
+  return apiRequest<ConfigSnapshot>(`/api/v1/config/sites/${encodeURIComponent(siteId)}`)
+}
+
+export async function updateConfig(request: ConfigUpdateRequest): Promise<unknown> {
+  const path = configPath(request.entity, request.id)
+  return apiRequest<unknown>(path, {
+    method: 'PATCH',
+    body: jsonBody(request.body),
+  })
+}
+
+export async function createPricingPolicy(request: CreatePricingPolicyRequest): Promise<PricingPolicy> {
+  return apiRequest<PricingPolicy>('/api/v1/config/pricing-policies', {
+    method: 'POST',
+    body: jsonBody(request),
+  })
+}
+
+export async function generateAIInsight(request: AIInsightRequest): Promise<AIInsight> {
+  switch (request.kind) {
+    case 'session_explanation':
+      return apiRequest<AIInsight>('/api/v1/ai/session-explanations', {
+        method: 'POST',
+        body: jsonBody({ sessionId: request.sessionId }),
+      })
+    case 'work_order_summary':
+      return apiRequest<AIInsight>('/api/v1/ai/work-order-summaries', {
+        method: 'POST',
+        body: jsonBody({ workOrderId: request.workOrderId }),
+      })
+    case 'congestion_risk':
+      return apiRequest<AIInsight>('/api/v1/ai/congestion-risk', {
+        method: 'POST',
+        body: jsonBody({ siteId: request.siteId, horizonHours: request.horizonHours }),
+      })
+    case 'daily_report':
+      return apiRequest<AIInsight>('/api/v1/ai/daily-reports', {
+        method: 'POST',
+        body: jsonBody({ siteId: request.siteId, businessDate: request.businessDate }),
+      })
+    case 'station_qa':
+      return apiRequest<AIInsight>('/api/v1/ai/station-qa', {
+        method: 'POST',
+        body: jsonBody({ siteId: request.siteId, question: request.question }),
+      })
+  }
+}
+
+export async function getOperationsSnapshot(
+  siteCode: string | undefined,
+  access: OperationsSnapshotAccess,
+): Promise<OperationsSnapshot> {
+  const [sites, allSessions] = await Promise.all([
+    listSites(),
+    access.canReadSessions ? listSessions() : Promise.resolve([]),
+  ])
   const site = sites.find((item) => item.code === siteCode || item.id === siteCode) ?? sites[0]
 
   if (!site) {
@@ -255,16 +316,17 @@ export async function getOperationsSnapshot(siteCode?: string): Promise<Operatio
     loadControl,
     maintenance,
     detailResults,
-  ] =
-    await Promise.all([
-      getSiteTopology(site.code),
-      listPricingPolicies(site.code),
-      listBillingDrafts(site.code),
-      listReconciliationExceptions(site.code),
-      getLoadControlSnapshot(site.code),
-      getMaintenanceSnapshot(site.code),
-      Promise.allSettled(sessions.slice(0, 12).map((session) => getSessionDetail(session.sessionNo))),
-    ])
+  ] = await Promise.all([
+    getSiteTopology(site.code),
+    access.canReadBilling ? listPricingPolicies(site.code) : Promise.resolve([]),
+    access.canReadBilling ? listBillingDrafts(site.code) : Promise.resolve([]),
+    access.canReadBilling ? listReconciliationExceptions(site.code) : Promise.resolve([]),
+    access.canReadLoadControl ? getLoadControlSnapshot(site.code) : Promise.resolve(undefined),
+    access.canReadMaintenance ? getMaintenanceSnapshot(site.code) : Promise.resolve(undefined),
+    access.canReadSessions
+      ? Promise.allSettled(sessions.slice(0, 12).map((session) => getSessionDetail(session.sessionNo)))
+      : Promise.resolve([]),
+  ])
   const sessionDetails = detailResults.flatMap((result) =>
     result.status === 'fulfilled' ? [result.value] : [],
   )
@@ -280,5 +342,27 @@ export async function getOperationsSnapshot(siteCode?: string): Promise<Operatio
     reconciliationExceptions,
     loadControl,
     maintenance,
+  }
+}
+
+function configPath(entity: ConfigUpdateRequest['entity'], id: string): string {
+  const encoded = encodeURIComponent(id)
+  switch (entity) {
+    case 'site':
+      return `/api/v1/config/sites/${encoded}`
+    case 'area':
+      return `/api/v1/config/areas/${encoded}`
+    case 'group':
+      return `/api/v1/config/charger-groups/${encoded}`
+    case 'charger':
+      return `/api/v1/config/chargers/${encoded}`
+    case 'connector':
+      return `/api/v1/config/connectors/${encoded}`
+    case 'loadPolicy':
+      return `/api/v1/config/load-policies/${encoded}`
+    case 'reservationRule':
+      return `/api/v1/config/reservation-rules/${encoded}`
+    case 'queueRule':
+      return `/api/v1/config/queue-rules/${encoded}`
   }
 }
