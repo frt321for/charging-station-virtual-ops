@@ -56,10 +56,20 @@
 - `scripts/db.ps1 status|up|down`：通过 SSH 隧道对云端开发库执行后端内置迁移。
 - `scripts/backend.ps1 status|start|stop|restart`：管理本地 Go 后端生命周期。
 - `scripts/frontend.ps1 status|start|stop|restart`：管理本地 React 前端生命周期。
+- `scripts/simulator.ps1 status|once|start|stop|restart`：管理虚拟充电桩模拟器，支持单次闭环场景和后台持续心跳。
 - `scripts/dev-backend.ps1`：`backend.ps1 start` 的兼容入口。
 - `scripts/dev-frontend.ps1`：`frontend.ps1 start` 的兼容入口。
 
 后端脚本会先编译固定二进制到 `.run/backend-api.exe` 再后台启动，避免 `go run` 生成临时 `api.exe` 和残留进程。后端监听 `127.0.0.1:8080`，不对局域网开放。
+
+模拟器脚本会先编译固定二进制到 `.run/virtual-charger-simulator.exe`。常用命令：
+
+```powershell
+.\scripts\simulator.ps1 once -Chargers 2 -Connectors 2 -LoadCurve commute -FaultRate 0.2
+.\scripts\simulator.ps1 start -Chargers 5 -OnlineRate 0.8 -FaultRate 0.05
+.\scripts\simulator.ps1 status
+.\scripts\simulator.ps1 stop
+```
 
 ## 提交规范
 
